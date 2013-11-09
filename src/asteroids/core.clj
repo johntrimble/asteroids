@@ -14,14 +14,29 @@
 (defn velocity [v]
   {:name :velocity, :vector v})
 
+(defn max-velocity [magnitude]
+  {:name :max-velocity, :magnitude magnitude})
+
+(defn rotation [r]
+  {:name :rotation, :vector r})
+
 (defn bounding-box [pmin pmax]
   {:name :bounding-box, :vector [pmin pmax]})
 
 (defn acceleration [a]
   {:name :acceleration, :vector a})
 
+(defn mass [m]
+  {:name :mass, :mass m})
+
 (defn renderable [f]
   {:name :renderable, :fn f})
+
+(defn player []
+  {:name :player})
+
+(defn input [t]
+  {:name :input, :type t})
 
 (defn identifier
   ([] (identifier (uuid)))
@@ -31,6 +46,11 @@
 
 (defn has-component? [entity name]
   (get entity name))
+
+(defn has-components? [entity name & more]
+  (->> (concat [name] more)
+       (map has-component? (repeat entity))
+       (reduce #(and %1 %2))))
 
 (defn get-component [entity comp]
   (get entity comp))
@@ -56,6 +76,9 @@
   (let [id (-> entity (get-component :identifier) :id)]
     (assoc-in world [:entities id] entity)))
 
+(defn get-entities [world]
+  (vals (:entities world)))
+
 
 ;; convenience functions for getting basic component properties from entities
 
@@ -73,3 +96,11 @@
 
 (defn get-bounding-box [entity]
   (-> entity (get-component :bounding-box) :vector))
+
+(defn get-mass [entity]
+  (-> entity (get-component :mass) :mass))
+
+
+(defn dissoc-entity [world entity]
+  (assoc world :entities (dissoc (:entities world)
+                                 (get-id entity))))

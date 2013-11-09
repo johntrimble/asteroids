@@ -4,30 +4,40 @@
             [clojure.test :refer :all]
             [clojure.set :as set]
             [asteroids.vector :as vector]
-            [asteroids.core :refer :all])
-  (:import [javax.swing JFrame JPanel Timer JButton]
-           [java.awt Font Color Graphics Graphics2D BorderLayout Dimension Polygon]
-           [java.awt.geom AffineTransform]
-           [java.awt.color ColorSpace]
-           [java.awt.font FontRenderContext]
-           [java.awt.event ActionListener]))
+            [asteroids.core :refer :all]))
+
+(defn impulse [j]
+  {:name :impulse, :magnitude j})
+
+(defn collidable
+  ([] (collidable []))
+  ([entity-ids]
+   {:name :collidable, :entity-ids entity-ids}))
 
 (defn update-acceleration [entity]
   entity)
 
 (defn update-velocity [entity]
-  (let [acc (or (get-acceleration entity)
-                [0 0])
-        v (get-velocity entity)]
-    (assoc-component entity
-                     (velocity (vector/add v acc)))))
-
-(deftest update-velocity-test
-  (let [something (entity (velocity [2 1])
-                          (acceleration [1 0.5]))]
-    (is [3 1.5]
-        (get-in (update-velocity something)
-                [:velocity :vector]))))
+  (if (get-component entity :velocity)
+    (let [acc (or (get-acceleration entity)
+                  [0 0])
+          v (get-velocity entity)
+          m (or (:magnitude (get-component entity
+                                           :max-velocity))
+                Integer/MAX_VALUE)
+          m (max (if v
+                   (vector/length v)
+                   0)
+                 m)
+          nv (vector/add v acc)
+          nv (if (> (vector/length nv) m)
+               (vector/scale m
+                             (vector/normalize nv))
+               nv)]
+      (assert (not= nv nil))
+      (assoc-component entity
+                       (velocity nv)))
+    entity))
 
 (defn update-position [entity]
   (let [velocity (or (get-velocity entity)
@@ -35,36 +45,24 @@
         current-pos (get-position entity)
         new-pos (->> current-pos
                      (vector/add velocity)
-                     (map int)
                      (map #(mod % 800))
                      (vec))]
     (assoc-component entity (position new-pos))))
-
-(deftest update-position-test
-  (let [something (entity (velocity [0.35 1.6])
-                          (position [5 5]))]
-    (is [6 7]
-        (get-in (update-position (update-position something))
-                [:position :vector]))))
 
 (defn midpoint [[x1 y1] [x2 y2]]
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
 
 (defn update-bounding-box [entity]
-  (let [pos (get-position entity)
-        [pmin pmax] (-> entity (get-component :bounding-box) :vector)
-        mid (midpoint pmin pmax)
-        delta (vector/sub pos mid)
-        pmin (mapv int (vector/add pmin delta))
-        pmax (mapv int (vector/add pmax delta))]
-    (assoc-component entity
-                     (bounding-box pmin pmax))))
-
-
-(deftest update-bounding-box-test
-  (let [something (entity (position [4 5]) (bounding-box [0 0] [2 2]))]
-    (is [[3 4] [5 6]]
-        (get-in (update-bounding-box something) [:bounding-box :vector]))))
+  (if (get-component entity :bounding-box)
+    (let [pos (get-position entity)
+          [pmin pmax] (-> entity (get-component :bounding-box) :vector)
+          mid (midpoint pmin pmax)
+          delta (vector/sub pos mid)
+          pmin (vector/add pmin delta)
+          pmax (vector/add pmax delta)]
+      (assoc-component entity
+                       (bounding-box pmin pmax)))
+  entity))
 
 
 (defn test-entity [[x y] l]
@@ -100,15 +98,6 @@
                                    (get entity-box-m (second pair)))))
          (distinct))))
 
-(deftest find-all-bounding-box-collisions
-  (let [a [(uuid) (test-entity [4 5] 4)]
-        b [(uuid) (test-entity [7 8] 4)]
-        c [(uuid) (test-entity [9 9] 2)]
-        world {:entities (into {} [a b c])}
-        collisions (find-bounding-box-collisions world)]
-    (is #{#{(first a) (first b)}}
-        collisions)))
-
 (defn circles-collide? [c1 r1 c2 r2]
   (> (+ r1 r2) (vector/length (vector/sub c1 c2))))
 
@@ -124,8 +113,6 @@
          (filter #(apply circles-collide?
                          (concat (to-circle (get-entity world (first %)))
                                  (to-circle (get-entity world (second %)))))))))
-
-#_(run-tests)
 
 (defn fmap [f m]
   (into {}
@@ -182,22 +169,6 @@
 
 #_(circles-collide? [165 754] 8 [155.91217058837705 837.1614228898975] 7.912170588377052)
 
-(deftest translate-points-to-desired-offset-test
-  (is (== 5.0
-          (->> (translate-points-to-desired-offset [3 4]
-                                                   [5 6]
-                                                   [-1 -1]
-                                                   [1 1]
-                                                   5)
-               (apply vector/sub)
-               (vector/length))))
-  ;; check that v2 is halved in the off chance that both objects have the same velocity
-  (is (== [[497.1963120067104 356.6355744080525] [503.5981560033552 364.3177872040262]]
-          (translate-points-to-desired-offset [510 372]
-                                    [510 372]
-                                    [5 6]
-                                    [5 6]
-                                    10))))
 
 (defn find-post-collision-velocities [v1 v2 m1 m2]
   (let [nv1 (/ (+ (* v1 (- m1 m2))
@@ -208,11 +179,6 @@
                   (* -1 m1 nv1))
                m2)]
     [nv1 nv2]))
-
-
-#_(find-post-collision-velocities 5 -5 10 10)
-
-#_(find-post-collision-velocities 5 -5 10 5)
 
 (defn handle-collision [world entity1 entity2]
   (let [pos1 (get-position entity1)
@@ -237,8 +203,8 @@
           cv2 (vector/dot collision-plane v2)
           [nv1sa nv2sa] (find-post-collision-velocities nv1
                                                         nv2
-                                                        (* Math/PI (* r1 r1))
-                                                        (* Math/PI (* r2 r2)))
+                                                        (get-mass entity1)
+                                                        (get-mass entity2))
           new-v1 (vector/add (vector/scale nv1sa normal-plane)
                              (vector/scale cv1 collision-plane))
           new-v2 (vector/add (vector/scale nv2sa normal-plane)
@@ -249,29 +215,19 @@
           entity2 (-> entity2
                       (assoc-component (position npos2))
                       (assoc-component (velocity new-v2)))]
-      (when (and (every? #(Double/isNaN %) new-v1)
-                 (every? (comp not #(Double/isNaN %)) v1))
-        (println "v:" v1 "->" new-v1)
-        (println "pos1:" pos1 "->" npos1)
-        (println "pos2:" pos2 "->" npos2)
-        (println "r1:" r1)
-        (println "r2:" r2)
-        (println "v1:" v1)
-        (println "v2:" v2)
-        (println "nv1:" nv1)
-        (println "nv2:" nv2)
-        (println "cv1:" cv1)
-        (println "collision-plane:" collision-plane)
-        (println "normal-plane:" normal-plane))
-      (-> world
-          (assoc-entity entity1)
-          (assoc-entity entity2)))))
+      [entity1 entity2])))
 
+
+;; NOTE: This does not handle collisions involving more than 2 objects well.
+;; What happens currently is that each pair of colliding entities is handled
+;; independently and the updated entites are then merged back into the world.
+;; If the same entity was updated twice, one of those updates gets lost.
 (defn handle-collisions [world pairs]
   (if (seq pairs)
-    (let [[eid1 eid2] (seq (first pairs))
-          world (handle-collision world (get-entity world eid1) (get-entity world eid2))]
-      (recur world (rest pairs)))
+    (->> pairs
+         (map (partial map (partial get-entity world)))
+         (mapcat (partial apply (partial handle-collision world)))
+         (reduce assoc-entity world))
     world))
 
 (defn update-collisions [world]
@@ -287,3 +243,61 @@
        (fmap update-position)
        (fmap update-bounding-box)
        (assoc-in world [:entities])))
+
+(defn clear-collisions [world]
+  (->> world
+       (get-entities)
+       (filter #(has-component? % :collidable))
+       (map #(assoc-component % (collidable)))
+       (reduce assoc-entity world)))
+
+(defn physics-system [world]
+  (-> world
+      (update-physics)))
+
+(defn collision-detection-system [world]
+  (let [pairs (find-bounding-box-collisions world)
+        pairs (find-collisions world pairs)]
+    (->> world
+         get-entities
+         (filter #(has-component? % :collidable))
+         (map (fn [e]
+                (assoc-component e
+                                 (collidable (->> pairs
+                                                  (filter #(contains? % (get-id e)))
+                                                  (reduce set/union #{})
+                                                  (filter (partial not= (get-id e))))))))
+         (reduce assoc-entity world))))
+
+(defn update-with-impulse [old-world world]
+  (let [has-mass-velocity? #(and (has-component? % :mass)
+                                 (has-component? % :velocity))]
+    (->> world
+         get-entities
+         (map #(vector % (get-entity old-world (get-id %))))
+         (filter #(second %))
+         (filter #(every? has-mass-velocity? %))
+
+         (map (fn [[ne e]]
+                (assoc-component ne
+                                 (impulse (Math/abs (* (get-mass ne) ; assume mass didn't change
+                                                       (vector/length (vector/sub (get-velocity e)
+                                                                                  (get-velocity ne)))))))))
+         (reduce assoc-entity world))))
+
+(defn collision-physics-system [world]
+  (->> world
+       (get-entities)
+       (filter #(has-component? % :collidable))
+       (filter #(-> %
+                    (get-component :collidable)
+                    :entity-ids
+                    seq))
+       (mapcat (fn [e] (let [collides-with (-> e
+                                               (get-component :collidable)
+                                               :entity-ids)]
+                         (map #(set [(get-id e) %])
+                              collides-with))))
+       (into #{})
+       (handle-collisions world)
+       (update-with-impulse world)))
