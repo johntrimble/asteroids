@@ -8,9 +8,8 @@
             [asteroids.view :refer [swing-view
                                     render-circle
                                     render-ship
-                                    input-system
-                                    thrust-system
-                                    rotate-system]]
+                                    keyboard-input-system
+                                    keyboard-input]]
             [asteroids.physics :refer [physics-system
                                        collidable
                                        collision-detection-system
@@ -43,6 +42,18 @@
 
 (defn health-bar [entity-id]
   {:name :health-bar, :entity-id entity-id, :percentage 1})
+
+(defn thrust-intent []
+  {:name :thrust-intent})
+
+(defn rotate-right-intent []
+  {:name :rotate-right-intent})
+
+(defn rotate-left-intent []
+  {:name :rotate-left-intent})
+
+(defn thrust [acc]
+  {:name :thrust, :vector acc})
 
 
 ;; component utility functions
@@ -131,7 +142,7 @@
                      (bounding-box [390 390] [410 410])
                      (mass (* Math/PI (* 10 10)))
                      (max-velocity 10)
-                     (input :keyboard)
+                     (keyboard-input)
                      (renderable render-ship))
         health-bar (health-bar-entity (get-id ship))]
     (reduce assoc-entity world [ship health-bar])))
@@ -257,6 +268,98 @@
        (map (partial update-health-bar world))
        (reduce assoc-entity world)))
 
+
+;; intent system
+
+(defn clear-intents [world]
+  (->> world
+       (get-entities)
+       (map #(reduce dissoc % [:rotate-right-intent
+                               :rotate-left-intent
+                               :thrust-intent]))
+       (reduce assoc-entity world)))
+
+(defn intent-system [world]
+  (let [key->intent {:right-arrow rotate-right-intent
+                     :left-arrow rotate-left-intent
+                     :up-arrow thrust-intent}
+        world (clear-intents world)]
+    (->> world
+         get-entities
+         (filter #(has-component? % :keyboard-input))
+         (map (fn [{:keys [keyboard-input] :as entity}]
+                (->> keyboard-input
+                     :keys-pressed
+                     (map key->intent)
+                     (filter identity)
+                     (map (fn [c] (c)))
+                     (reduce assoc-component entity))))
+         (filter identity)
+         (reduce assoc-entity world))))
+
+
+;; thrust system
+
+(defn apply-thrust [entity]
+  (let [rotation-vec (-> entity
+                         (get-component :rotation)
+                         (:vector [1 0]))
+        intent-vec (if (get-component entity :thrust-intent)
+                     (vector/scale 0.0125
+                                   (vector/normalize rotation-vec))
+                     [0 0])
+        thrust-vec (-> entity
+                       (get-component :thrust)
+                       (:vector [0 0]))
+        acc-vec (-> entity
+                    (get-component :acceleration)
+                    (:vector [0 0]))
+        nacc-vec (-> (vector/add acc-vec
+                                 (vector/sub intent-vec
+                                             thrust-vec)))]
+    (-> entity
+        (dissoc :thrust-intent)
+        (assoc-component (acceleration nacc-vec))
+        (assoc-component (thrust intent-vec)))))
+
+(defn thrust-system [world]
+  (->> world
+       (get-entities)
+       (filter #(or (has-component? % :thrust-intent)
+                   (has-component? % :thrust)))
+       (map apply-thrust)
+       (reduce assoc-entity world)))
+
+
+;; rotation system
+
+(defn update-rotate [entity]
+  (let [[rx ry] (-> entity
+                    (get-component :rotation)
+                    (:vector [1 0]))
+        delta (* 0.01 (* 2 Math/PI))
+        delta (if (get-component entity :rotate-left-intent)
+                (* -1 delta)
+                delta)
+        rotate [(- (* rx
+                       (Math/cos delta))
+                    (* ry (Math/sin delta)))
+                 (+ (* rx
+                       (Math/sin delta))
+                    (* ry
+                       (Math/cos delta)))]]
+    (assert (or (has-component? entity :rotate-left-intent)
+                (has-component? entity :rotate-right-intent)))
+    (assoc-component entity (rotation rotate))))
+
+(defn rotate-system [world]
+  (->> (get-entities world)
+       (filter #(or (has-component? % :rotate-left-intent)
+                    (has-component? % :rotate-right-intent)))
+       (map update-rotate)
+       (reduce assoc-entity world)))
+
+
 ;; boot her up baby!
 
 (def world (atom {}))
@@ -267,7 +370,8 @@
 
 (defn next-world [world]
   (-> world
-      input-system
+      keyboard-input-system
+      intent-system
       rotate-system
       thrust-system
       physics-system
