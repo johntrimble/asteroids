@@ -52,23 +52,23 @@
 (defn midpoint [[x1 y1] [x2 y2]]
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
 
-(defn update-bounding-box [entity]
-  (if (get-component entity :bounding-box)
+(defn update-aabb [entity]
+  (if (get-component entity :aabb)
     (let [pos (get-position entity)
-          [pmin pmax] (-> entity (get-component :bounding-box) :vector)
+          [pmin pmax] (-> entity (get-component :aabb) :vector)
           mid (midpoint pmin pmax)
           delta (vector/sub pos mid)
           pmin (vector/add pmin delta)
           pmax (vector/add pmax delta)]
       (assoc-component entity
-                       (bounding-box pmin pmax)))
+                       (aabb pmin pmax)))
   entity))
 
 
 (defn test-entity [[x y] l]
   (let [offset (int (/ l 2))]
     (entity (position [x y])
-            (bounding-box [(- x offset) (- y offset)]
+            (aabb [(- x offset) (- y offset)]
                           [(+ x offset) (+ y offset)]))))
 
 (defn boxes-overlap? [[[xmin1 ymin1] [xmax1 ymax1]]
@@ -78,16 +78,16 @@
        (< ymin2 ymax1)
        (< xmin2 xmax1)))
 
-(defn find-bounding-box-collisions [world]
+(defn find-aabb-collisions [world]
   (let [entities (->> world
                       :entities
                       vals
-                      (filter #(has-component? % :bounding-box)))
+                      (filter #(has-component? % :aabb)))
 
         entity-box-m (->> entities
                           (map (juxt get-id
                                      (comp :vector
-                                           #(get-component % :bounding-box))))
+                                           #(get-component % :aabb))))
                           (into {}))
         ids (map get-id entities)
         pairs (into #{}
@@ -103,7 +103,7 @@
 
 (defn find-collisions [world pairs]
   (let [to-circle (fn [entity]
-                    (let [box (get-bounding-box entity)
+                    (let [box (get-aabb entity)
                           [[xmin ymin] [xmax ymax]] box
                           [x y] (get-position entity)
                           r (Math/abs (- xmax x))]
@@ -163,8 +163,8 @@
 (defn handle-collision [world entity1 entity2]
   (let [pos1 (get-position entity1)
         pos2 (get-position entity2)
-        [[xmin1 _] [xmax1 _]] (get-bounding-box entity1)
-        [[xmin2 _] [xmax2 _]] (get-bounding-box entity2)
+        [[xmin1 _] [xmax1 _]] (get-aabb entity1)
+        [[xmin2 _] [xmax2 _]] (get-aabb entity2)
         r1 (Math/abs (- xmax1 (first pos1)))
         r2 (Math/abs (- xmax2 (first pos2)))
         v1 (get-velocity entity1)
@@ -211,7 +211,7 @@
     world))
 
 (defn update-collisions [world]
-  (let [box-collisions (find-bounding-box-collisions world)
+  (let [box-collisions (find-aabb-collisions world)
         collisions (find-collisions world box-collisions)]
     (handle-collisions world collisions)))
 
@@ -221,7 +221,7 @@
        (fmap update-acceleration)
        (fmap update-velocity)
        (fmap update-position)
-       (fmap update-bounding-box)
+       (fmap update-aabb)
        (assoc-in world [:entities])))
 
 (defn clear-collisions [world]
@@ -236,7 +236,7 @@
       (update-physics)))
 
 (defn collision-detection-system [world]
-  (let [pairs (find-bounding-box-collisions world)
+  (let [pairs (find-aabb-collisions world)
         pairs (find-collisions world pairs)]
     (->> world
          get-entities

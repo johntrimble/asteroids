@@ -20,8 +20,8 @@
 (defn rotation [r]
   {:name :rotation, :vector r})
 
-(defn bounding-box [pmin pmax]
-  {:name :bounding-box, :vector [pmin pmax]})
+(defn aabb [pmin pmax]
+  {:name :aabb, :vector [pmin pmax]})
 
 (defn acceleration [a]
   {:name :acceleration, :vector a})
@@ -94,8 +94,8 @@
 (defn get-position [entity]
   (-> entity (get-component :position) :vector))
 
-(defn get-bounding-box [entity]
-  (-> entity (get-component :bounding-box) :vector))
+(defn get-aabb [entity]
+  (-> entity (get-component :aabb) :vector))
 
 (defn get-mass [entity]
   (-> entity (get-component :mass) :mass))

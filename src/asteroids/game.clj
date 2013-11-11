@@ -126,7 +126,7 @@
             (collidable)
             (velocity [vx vy])
             (mass (* Math/PI (* r r)))
-            (bounding-box [xmin ymin] [xmax ymax])
+            (aabb [xmin ymin] [xmax ymax])
             (renderable (partial render-circle
                                  (Color. 135 108 46)
                                  r)))))
@@ -139,7 +139,7 @@
                      (collidable)
                      (player)
                      (health 10000)
-                     (bounding-box [390 390] [410 410])
+                     (aabb [390 390] [410 410])
                      (mass (* Math/PI (* 10 10)))
                      (max-velocity 10)
                      (keyboard-input)
