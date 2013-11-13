@@ -241,14 +241,6 @@
         world (reduce assoc-entity world damage-entities)
         world (reduce assoc-entity world updated-health)]
     world))
-  #_(->> world
-       get-entities
-       (filter #(has-component? % :damage))
-       (map #(damage-entity (get-position %) (get-damage %)))
-       (reduce assoc-entity world)
-       (get-entities)
-       (map #(dissoc % :damage))
-       (reduce assoc-entity world))
 
 ;; health bar system
 

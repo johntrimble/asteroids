@@ -118,85 +118,101 @@
   (into {}
         (for [[k v] m] [k (f v)])))
 
-(defn quadratic [a b c]
-  [(/ (+ (* -1 b) (Math/sqrt (- (Math/pow b 2) (* 4 a c)))) (* 2 a))
-   (/ (- (* -1 b) (Math/sqrt (- (Math/pow b 2) (* 4 a c)))) (* 2 a))])
-
-(defn translate-points-to-desired-offset
-  "Given two positions and two verticies, adjust the positions along their
-  respective verticies until the distance between them is the desired offset."
-  [pos1 pos2 v1 v2 desired-offset]
-  (let [v2 (cond
-            ;; odd case where two objects collide but aren't moving
-            (reduce #(and %1 %2)
-                    (map == v1 v2 [0 0]))
-            [1 1]
-            ;; odd case where two objects collide but have same velocity
-            (reduce #(and %1 %2)
-                    (map == v1 v2))
-            (vector/scale 0.5 v2)
-            ;; standard case
-            :default v2)
-        [px py] (vector/sub pos1 pos2)
-        [vx vy] (vector/sub v1 v2)
-        a (+ (Math/pow vx 2) (Math/pow vy 2))
-        b (+ (* 2 vx px) (* 2 vy py))
-        c (+ (Math/pow px 2)
-             (Math/pow py 2)
-             (* -1 (Math/pow desired-offset 2)))
-        [t1 t2] (quadratic a b c)
-        t (min t1 t2)
-        npos1 (vector/add pos1 (vector/scale t v1))
-        npos2 (vector/add pos2 (vector/scale t v2))]
-    [npos1 npos2]))
-
-(defn find-post-collision-velocities [v1 v2 m1 m2]
-  (let [nv1 (/ (+ (* v1 (- m1 m2))
-                  (* 2 m2 v2))
-               (+ m1 m2))
-        nv2 (/ (+ (* m1 v1)
-                  (* m2 v2)
-                  (* -1 m1 nv1))
-               m2)]
-    [nv1 nv2]))
-
-(defn handle-collision [world entity1 entity2]
+(defn calc-collision-manifold [world entity1 entity2]
   (let [pos1 (get-position entity1)
         pos2 (get-position entity2)
         [[xmin1 _] [xmax1 _]] (get-aabb entity1)
         [[xmin2 _] [xmax2 _]] (get-aabb entity2)
+        trans (vector/sub pos2 pos1)
+        ;; TODO: there is not currently support for different shapes for rigid
+        ;; bodies, so everything is just assumed to be a circle inscribed
+        ;; inside the AABB.
         r1 (Math/abs (- xmax1 (first pos1)))
         r2 (Math/abs (- xmax2 (first pos2)))
-        v1 (get-velocity entity1)
-        v2 (get-velocity entity2)]
-    (assert (circles-collide? pos1 r1 pos2 r2) "Circles do not actually collide.")
-    (let [[npos1 npos2] (translate-points-to-desired-offset pos1
-                                                            pos2
-                                                            v1
-                                                            v2
-                                                            (+ r1 r2))
-          normal-plane (vector/normalize (vector/sub npos1 npos2))
-          collision-plane [(* -1 (second normal-plane)) (first normal-plane)]
-          nv1 (vector/dot normal-plane v1)
-          cv1 (vector/dot collision-plane v1)
-          nv2 (vector/dot normal-plane v2)
-          cv2 (vector/dot collision-plane v2)
-          [nv1sa nv2sa] (find-post-collision-velocities nv1
-                                                        nv2
-                                                        (get-mass entity1)
-                                                        (get-mass entity2))
-          new-v1 (vector/add (vector/scale nv1sa normal-plane)
-                             (vector/scale cv1 collision-plane))
-          new-v2 (vector/add (vector/scale nv2sa normal-plane)
-                             (vector/scale cv2 collision-plane))
-          entity1 (-> entity1
-                      (assoc-component (position npos1))
-                      (assoc-component (velocity new-v1)))
-          entity2 (-> entity2
-                      (assoc-component (position npos2))
-                      (assoc-component (velocity new-v2)))]
-      [entity1 entity2])))
+        d (vector/length trans)]
+    (cond
+     ;; case 1: edge case where both objects are right on top of each other
+     (vector/zero-vector? trans)
+     {:a-id (get-id entity1)
+      :b-id (get-id entity2)
+      :contacts [{:penetration r1
+                  :normal [1 0]
+                  :position pos1}]}
 
+     ;; case 2: edge case where there isn't actually a collision, this can
+     ;; happen when AABBs overlap but the actual shapes contained within them
+     ;; don't.
+     (> d (+ r1 r2))
+     {:a-id (get-id entity1)
+      :b-id (get-id entity2)
+      :contacts []}
+
+     ;; case 3: general case
+     :default
+     (let [normal (vector/normalize trans)]
+       {:a-id (get-id entity1)
+        :b-id (get-id entity2)
+        :contacts [{:penetration (- (+ r1 r2) d)
+                    :normal normal
+                    :position (vector/add (vector/scale r1 normal)
+                                          pos1)}]}))))
+
+(defn correct-positions [a b normal penetration]
+  (if (and penetration (> penetration 0))
+    (let [massa (get-mass a)
+          massb (get-mass b)
+          posa (get-position a)
+          posb (get-position b)
+          delta (vector/scale penetration normal)]
+      [(-> a
+           (assoc-component (position (vector/sub posa
+                                                  (vector/scale (/ 1 massa)
+                                                                delta)))))
+       (-> b
+           (assoc-component (position (vector/add posb
+                                                  (vector/scale (/ 1 massb)
+                                                                delta)))))])
+      [a b]))
+
+(defn resolve-collision [world {:keys [a-id b-id contacts]}]
+  (if (seq contacts)
+    (let [contact (first contacts)
+          a (get-entity world a-id)
+          b (get-entity world b-id)
+          normal (:normal contact)
+          va (get-velocity a)
+          vb (get-velocity b)
+          relv (vector/sub vb va)
+          collision-relv (vector/dot relv normal)]
+      (if (> collision-relv 0)
+        ;; objects are moving apart
+        []
+        ;; objects are moving towards each other, resolve collision
+        (let [penetration (:penetration contact)
+              mass-a (get-mass a)
+              mass-b (get-mass b)
+              impulse (/ (* -2 collision-relv)
+                         (+ (/ 1 mass-a) (/ 1 mass-b)))
+              new-va (vector/sub va
+                                 (vector/scale (/ impulse mass-a)
+                                               normal))
+              new-vb (vector/add vb
+                                 (vector/scale (/ impulse mass-b)
+                                               normal))
+              pos-correction (vector/scale (* 0.5 penetration)
+                                           normal)]
+          (correct-positions (-> a
+                                 (assoc-component (velocity new-va)))
+                             (-> b
+                                 (assoc-component (velocity new-vb)))
+                             normal
+                             penetration))))
+    []))
+
+(defn resolve-collisions [world manifolds]
+  (->> manifolds
+       (mapcat (partial resolve-collision world))
+       (reduce assoc-entity world)))
 
 ;; NOTE: This does not handle collisions involving more than 2 objects well.
 ;; What happens currently is that each pair of colliding entities is handled
@@ -206,8 +222,8 @@
   (if (seq pairs)
     (->> pairs
          (map (partial map (partial get-entity world)))
-         (mapcat (partial apply (partial handle-collision world)))
-         (reduce assoc-entity world))
+         (map (partial apply calc-collision-manifold world))
+         (resolve-collisions world))
     world))
 
 (defn update-collisions [world]

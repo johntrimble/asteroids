@@ -20,7 +20,14 @@
 (defn rotation [r]
   {:name :rotation, :vector r})
 
-(defn aabb [pmin pmax]
+;; TODO: This is nice when sweeping across the world looking for intersecting
+;; AABBs, but wouldn't it make more sense to define this using the body's
+;; coordinate space for an anchor and then a length and width?
+(defn aabb
+  "Defines an AABB in terms of world coordinates using the coordinate with
+  minium values for x and y (pmin) and the coordinate with maximum values for
+  x and y (pmax)."
+  [pmin pmax]
   {:name :aabb, :vector [pmin pmax]})
 
 (defn acceleration [a]

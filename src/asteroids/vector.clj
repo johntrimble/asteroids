@@ -32,6 +32,16 @@
     (scale (dot a ub)
            ub)))
 
+(defn vec== [a b]
+  (reduce #(and %1 %2)
+          true
+          (map == a b)))
+
+(defn zero-vector? [a]
+  (reduce #(and %1 %2)
+          true
+          (map == (repeat 0) a)))
+
 (deftest vector-test
   (is (= [3 5]
          (add [1 2] [2 3])))
