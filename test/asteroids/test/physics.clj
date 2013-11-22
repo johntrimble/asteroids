@@ -138,3 +138,37 @@
           manifold (calc-collision-manifold world a b)
           contacts (:contacts manifold)]
       (is (empty? contacts)))))
+
+(deftest get-vel-point-test
+  (let [a (entity (collidable)
+                  (mass 1)
+                  (velocity [0 0])
+                  (position [0 0])
+                  (aabb [-2 -2] [2 2])
+                  (angular-velocity 0.5))
+        b (assoc-component a (velocity [1 1]))
+        upper-right (vector/scale 2 (vector/normalize [2 2]))]
+    (testing "non-translating rotating circle"
+      (testing "velocity at origin"
+        (is (= [0.0 0.0]
+               (get-vel-point a [0 0]))))
+      (testing "velocity at perimeter"
+        (is (= [-1.0 0.0]
+               (get-vel-point a [0 2])))
+        (is (= [0.0 -1.0]
+               (get-vel-point a [-2 0])))
+        (is (= [-0.7071067811865475 0.7071067811865475]
+               (get-vel-point a upper-right))))
+      (testing "velocity at internal points"
+        (is (= [-0.5 0.0]
+               (get-vel-point a [0 1])))))
+    (testing "translating rotating circle"
+      (testing "velocity at origin"
+        (is (= [1.0 1.0]
+               (get-vel-point b [0 0]))))
+      (testing "velocity at permiter"
+        (is (= [0.0 1.0]
+               (get-vel-point b [0 2]))))
+      (testing "velocity at internal points"
+        (is (= [0.5 1.0]
+               (get-vel-point b [0 1])))))))

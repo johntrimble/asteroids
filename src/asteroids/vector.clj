@@ -22,6 +22,9 @@
        (map (fn [[a b]] (* a b)))
        (reduce +)))
 
+(defn perp [v]
+  [(- (nth v 1))
+   (nth v 0)])
 
 (defn normalize [v]
   (let [l (length v)]

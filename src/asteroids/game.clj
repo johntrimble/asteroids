@@ -13,7 +13,8 @@
             [asteroids.physics :refer [physics-system
                                        collidable
                                        collision-detection-system
-                                       collision-physics-system]])
+                                       collision-physics-system
+                                       moment-inertia]])
   (:import [javax.swing JFrame JPanel JButton]
            [java.awt Font Color Graphics Graphics2D BorderLayout Dimension Polygon]
            [java.awt.geom AffineTransform]
@@ -121,10 +122,14 @@
         ymin (int (- y r))
         ymax (int (+ y r))
         vx (rand-nth (range -5 5))
-        vy (rand-nth (range -5 5))]
+        vy (rand-nth (range -5 5))
+        av (* 0.01 (- (rand (* 4 Math/PI)) (* 2 Math/PI)))
+        ap (* 0.01 (- (rand (* 4 Math/PI)) (* 2 Math/PI)))]
     (entity (position [x y])
             (collidable)
+            (rotation ap)
             (velocity [vx vy])
+            (angular-velocity av)
             (mass (* Math/PI (* r r)))
             (aabb [xmin ymin] [xmax ymax])
             (renderable (partial render-circle
@@ -135,7 +140,7 @@
   (let [ship (entity (position [400 400])
                      (velocity [0 0])
                      (acceleration [0 0])
-                     (rotation [1 0])
+                     (rotation 0)
                      (collidable)
                      (player)
                      (health 10000)
@@ -150,7 +155,7 @@
 ;; World Generation
 
 (defn add-asteroids [world]
-  (->> (range 15)
+  (->> (range 5)
        (map (fn [_] (generate-asteroid)))
        (reduce assoc-entity world)))
 
@@ -291,24 +296,18 @@
 
 
 ;; thrust system
-
 (defn apply-thrust [entity]
-  (let [rotation-vec (-> entity
-                         (get-component :rotation)
-                         (:vector [1 0]))
-        intent-vec (if (get-component entity :thrust-intent)
-                     (vector/scale 0.0125
-                                   (vector/normalize rotation-vec))
+  (let [rotation (-> entity (get-component :rotation) (:angle 0))
+        direction-vec (vector/rotate rotation
+                                     [1 0])
+        intent-vec (if (has-component? entity :thrust-intent)
+                     (vector/scale 0.0125 direction-vec)
                      [0 0])
         thrust-vec (-> entity
                        (get-component :thrust)
                        (:vector [0 0]))
-        acc-vec (-> entity
-                    (get-component :acceleration)
-                    (:vector [0 0]))
-        nacc-vec (-> (vector/add acc-vec
-                                 (vector/sub intent-vec
-                                             thrust-vec)))]
+        acc-vec (-> entity (get-component :acceleration) (:vector [0 0]))
+        nacc-vec (-> (vector/add acc-vec (vector/sub intent-vec thrust-vec)))]
     (-> entity
         (dissoc :thrust-intent)
         (assoc-component (acceleration nacc-vec))
@@ -326,22 +325,14 @@
 ;; rotation system
 
 (defn update-rotate [entity]
-  (let [[rx ry] (-> entity
+  (let [angle (-> entity
                     (get-component :rotation)
-                    (:vector [1 0]))
+                    (:angle 0))
         delta (* 0.01 (* 2 Math/PI))
         delta (if (get-component entity :rotate-left-intent)
                 (* -1 delta)
                 delta)
-        rotate [(- (* rx
-                       (Math/cos delta))
-                    (* ry (Math/sin delta)))
-                 (+ (* rx
-                       (Math/sin delta))
-                    (* ry
-                       (Math/cos delta)))]]
-    (assert (or (has-component? entity :rotate-left-intent)
-                (has-component? entity :rotate-right-intent)))
+        rotate (+ angle delta)]
     (assoc-component entity (rotation rotate))))
 
 (defn rotate-system [world]

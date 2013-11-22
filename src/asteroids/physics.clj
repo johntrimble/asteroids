@@ -9,10 +9,31 @@
 (defn impulse [j]
   {:name :impulse, :magnitude j})
 
+(defn moment-inertia [tensor]
+  {:name :moment-inertia :tensor tensor})
+
+(defn get-moment-of-inertia [entity]
+  (:tensor (get-component entity :moment-inertia)))
+
+(defn get-vel-point
+  "Returns the velocity of a given world point on the entity. The behavior of
+  this function is undefined for world points not on the entity."
+  [entity point]
+  (let [pos (get-position entity)
+        v (get-velocity entity)
+        w (get-angular-velocity entity)]
+    (vector/add v
+                (vector/scale w
+                              (vector/perp (vector/sub point pos))))))
+
 (defn collidable
   ([] (collidable []))
   ([entity-ids]
    {:name :collidable, :entity-ids entity-ids}))
+
+(defn half-weld-joint
+  ([a-id b-id]
+   {:name :half-weld-joint, :a-id a-id, :b-id b-id}))
 
 (defn update-acceleration [entity]
   entity)
@@ -34,7 +55,6 @@
                (vector/scale m
                              (vector/normalize nv))
                nv)]
-      (assert (not= nv nil))
       (assoc-component entity
                        (velocity nv)))
     entity))
@@ -48,6 +68,38 @@
                      (map #(mod % 800))
                      (vec))]
     (assoc-component entity (position new-pos))))
+
+(defn update-angular-acceleration [entity]
+  entity)
+
+;; TODO: This looks almost identical to update-velocity... perhaps there
+;; should be a little code reuse here.
+(defn update-angular-velocity [entity]
+  (if (get-component entity :angular-velocity)
+    (let [acc (or (get-angular-acceleration entity)
+                  0)
+          v (get-angular-velocity entity)
+          m (or (:magnitude (get-component entity
+                                           :max-angular-velocity))
+                Integer/MAX_VALUE)
+          nv (+ v acc)
+          s (Math/abs nv)
+          nv (if (> s m)
+               (* (/ nv s) m)
+               nv)]
+      (assoc-component entity
+                       (angular-velocity nv)))
+    entity))
+
+(defn update-rotation [entity]
+  (if (get-component entity :rotation)
+    (let [v (or (get-angular-velocity entity)
+                0)
+          current-rotation (get-rotation entity)
+          new-rotation (+ v current-rotation)]
+      (assoc-component entity (rotation new-rotation)))
+    entity))
+
 
 (defn midpoint [[x1 y1] [x2 y2]]
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
@@ -63,13 +115,6 @@
       (assoc-component entity
                        (aabb pmin pmax)))
   entity))
-
-
-(defn test-entity [[x y] l]
-  (let [offset (int (/ l 2))]
-    (entity (position [x y])
-            (aabb [(- x offset) (- y offset)]
-                          [(+ x offset) (+ y offset)]))))
 
 (defn boxes-overlap? [[[xmin1 ymin1] [xmax1 ymax1]]
                       [[xmin2 ymin2] [xmax2 ymax2]]]
@@ -191,7 +236,8 @@
         (let [penetration (:penetration contact)
               mass-a (get-mass a)
               mass-b (get-mass b)
-              impulse (/ (* -2 collision-relv)
+              restitution 1.0 ;; perfectly elastic collisions
+              impulse (/ (* (* -1 (+ restitution 1.0)) collision-relv)
                          (+ (/ 1 mass-a) (/ 1 mass-b)))
               new-va (vector/sub va
                                  (vector/scale (/ impulse mass-a)
@@ -235,8 +281,11 @@
   (->> world
        (:entities)
        (fmap update-acceleration)
+       (fmap update-angular-acceleration)
        (fmap update-velocity)
+       (fmap update-angular-velocity)
        (fmap update-position)
+       (fmap update-rotation)
        (fmap update-aabb)
        (assoc-in world [:entities])))
 

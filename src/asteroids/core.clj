@@ -11,14 +11,26 @@
 (defn position [p]
   {:name :position, :vector p})
 
+(defn acceleration [a]
+  {:name :acceleration, :vector a})
+
 (defn velocity [v]
   {:name :velocity, :vector v})
 
 (defn max-velocity [magnitude]
   {:name :max-velocity, :magnitude magnitude})
 
-(defn rotation [r]
-  {:name :rotation, :vector r})
+(defn rotation [theta]
+  {:name :rotation, :angle theta})
+
+(defn angular-acceleration [theta]
+  {:name :angular-acceleration, :angle theta})
+
+(defn angular-velocity [theta]
+  {:name :angular-velocity, :angle theta})
+
+(defn max-angular-velocity [theta]
+  {:name :max-angular-acceleration, :magnitude theta})
 
 ;; TODO: This is nice when sweeping across the world looking for intersecting
 ;; AABBs, but wouldn't it make more sense to define this using the body's
@@ -29,9 +41,6 @@
   x and y (pmax)."
   [pmin pmax]
   {:name :aabb, :vector [pmin pmax]})
-
-(defn acceleration [a]
-  {:name :acceleration, :vector a})
 
 (defn mass [m]
   {:name :mass, :mass m})
@@ -93,13 +102,22 @@
   (-> entity (get-component :identifier) :id))
 
 (defn get-velocity [entity]
-  (-> entity (get-component :velocity) :vector))
+  (-> entity (get-component :velocity) (:vector [0 0])))
 
 (defn get-acceleration [entity]
   (-> entity (get-component :acceleration) :vector))
 
 (defn get-position [entity]
   (-> entity (get-component :position) :vector))
+
+(defn get-angular-velocity [entity]
+  (-> entity (get-component :angular-velocity) (:angle 0)))
+
+(defn get-angular-acceleration [entity]
+  (-> entity (get-component :angular-acceleration) :angle))
+
+(defn get-rotation [entity]
+  (-> entity (get-component :rotation) :angle))
 
 (defn get-aabb [entity]
   (-> entity (get-component :aabb) :vector))

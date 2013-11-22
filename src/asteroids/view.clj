@@ -70,12 +70,11 @@
 
 (defn render-ship [^Graphics g ship]
   (let [pos (get-int-position ship)
-        rotation (get-in ship [:rotation :vector])
+        rotation (get-in ship [:rotation :angle])
         x (nth pos 0)
         y (nth pos 1)
         trans (java.awt.geom.AffineTransform/getRotateInstance
-               (nth rotation 0)
-               (nth rotation 1)
+               rotation
                x
                y)
         points (map (partial transform trans)
@@ -88,10 +87,29 @@
     (.fillPolygon g ship-poly)))
 
 (defn render-circle [^Color color radius ^Graphics g entity]
-  (let [[x y] (get-int-position entity)
+  (let [pos (get-int-position entity)
+        x (nth pos 0)
+        y (nth pos 1)
+        radius (int radius)
+        rotation (get-in entity [:rotation :angle] 0)
+        trans (java.awt.geom.AffineTransform/getRotateInstance
+               rotation
+               x
+               y)
+        point (transform trans [x (+ y radius)])]
+    (.setColor g color)
+    (.fillOval g (- x radius) (- y radius) (* 2 radius) (* 2 radius))
+    (.setColor g (.darker color))
+    (.drawLine g x y (nth point 0) (nth point 1))))
+
+#_(defn render-circle [^Color color radius ^Graphics g entity]
+  (let [pos (get-int-position entity)
+        x (nth pos 0)
+        y (nth pos 1)
         radius (int radius)]
     (.setColor g color)
-    (.fillOval g (- x radius) (- y radius) (* 2 radius) (* 2 radius))))
+    (.fillOval g (- x radius) (- y radius) (* 2 radius) (* 2 radius))
+    (.setColor g (.darker color))))
 
 (defn render-entity [^Graphics g entity]
   (let [render (-> entity (get-component :renderable) :fn)]
