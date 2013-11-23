@@ -22,7 +22,18 @@
        (map (fn [[a b]] (* a b)))
        (reduce +)))
 
-(defn perp [v]
+(defn rotate [theta v]
+  (let [x (nth v 0)
+        y (nth v 1)]
+    [(- (* x (Math/cos theta))
+        (* y (Math/sin theta)))
+     (+ (* x (Math/sin theta))
+        (* y (Math/cos theta)))]))
+
+(defn perp
+  "Returns a vector with the same length as v but rotated counterclockwise
+  by 90 degrees."
+  [v]
   [(- (nth v 1))
    (nth v 0)])
 

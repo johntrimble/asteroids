@@ -129,6 +129,7 @@
             (collidable)
             (rotation ap)
             (velocity [vx vy])
+            (moment-inertia (* 0.25 Math/PI (Math/pow r 4)))
             (angular-velocity av)
             (mass (* Math/PI (* r r)))
             (aabb [xmin ymin] [xmax ymax])
@@ -147,6 +148,7 @@
                      (aabb [390 390] [410 410])
                      (mass (* Math/PI (* 10 10)))
                      (max-velocity 10)
+                     (moment-inertia (* 0.25 Math/PI (Math/pow 10 4)))
                      (keyboard-input)
                      (renderable render-ship))
         health-bar (health-bar-entity (get-id ship))]

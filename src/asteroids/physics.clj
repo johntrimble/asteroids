@@ -6,6 +6,8 @@
             [asteroids.vector :as vector]
             [asteroids.core :refer :all]))
 
+(def infinity Integer/MAX_VALUE)
+
 (defn impulse [j]
   {:name :impulse, :magnitude j})
 
@@ -13,10 +15,12 @@
   {:name :moment-inertia :tensor tensor})
 
 (defn get-moment-of-inertia [entity]
-  (:tensor (get-component entity :moment-inertia)))
+  (-> entity
+      (get-component :moment-inertia)
+      (:tensor infinity)))
 
 (defn get-vel-point
-  "Returns the velocity of a given world point on the entity. The behavior of
+  "Returns the velocity of a given world point on the entity. The value of
   this function is undefined for world points not on the entity."
   [entity point]
   (let [pos (get-position entity)
@@ -222,11 +226,12 @@
 (defn resolve-collision [world {:keys [a-id b-id contacts]}]
   (if (seq contacts)
     (let [contact (first contacts)
+          collison-point (:position contact)
           a (get-entity world a-id)
           b (get-entity world b-id)
           normal (:normal contact)
-          va (get-velocity a)
-          vb (get-velocity b)
+          va (get-vel-point a collison-point)
+          vb (get-vel-point b collison-point)
           relv (vector/sub vb va)
           collision-relv (vector/dot relv normal)]
       (if (> collision-relv 0)
@@ -236,21 +241,38 @@
         (let [penetration (:penetration contact)
               mass-a (get-mass a)
               mass-b (get-mass b)
+              moment-inertia-a (get-moment-of-inertia a)
+              moment-inertia-b (get-moment-of-inertia b)
               restitution 1.0 ;; perfectly elastic collisions
+              ra (vector/dot (vector/perp (vector/sub collison-point
+                                                      (get-position a)))
+                             normal)
+              rb (vector/dot (vector/perp (vector/sub collison-point
+                                                      (get-position b)))
+                             normal)
               impulse (/ (* (* -1 (+ restitution 1.0)) collision-relv)
-                         (+ (/ 1 mass-a) (/ 1 mass-b)))
-              new-va (vector/sub va
+                         (+ (/ 1 mass-a)
+                            (/ 1 mass-b)
+                            (/ (* ra ra) moment-inertia-a)
+                            (/ (* rb rb) moment-inertia-b)))
+              new-va (vector/sub (get-velocity a)
                                  (vector/scale (/ impulse mass-a)
                                                normal))
-              new-vb (vector/add vb
+              new-vb (vector/add (get-velocity b)
                                  (vector/scale (/ impulse mass-b)
                                                normal))
+              new-wa (+ (get-angular-velocity a) (/ (* ra impulse)
+                                                    moment-inertia-a))
+              new-wb (- (get-angular-velocity b) (/ (* rb impulse)
+                                                    moment-inertia-b))
               pos-correction (vector/scale (* 0.5 penetration)
                                            normal)]
           (correct-positions (-> a
-                                 (assoc-component (velocity new-va)))
+                                 (assoc-component (velocity new-va))
+                                 (assoc-component (angular-velocity new-wa)))
                              (-> b
-                                 (assoc-component (velocity new-vb)))
+                                 (assoc-component (velocity new-vb))
+                                 (assoc-component (angular-velocity new-wb)))
                              normal
                              penetration))))
     []))
