@@ -22,7 +22,8 @@
 (def key-keyword-map (->> {#{KeyEvent/VK_UP KeyEvent/VK_KP_UP} :up-arrow
                            #{KeyEvent/VK_DOWN KeyEvent/VK_KP_DOWN} :down-arrow
                            #{KeyEvent/VK_RIGHT KeyEvent/VK_KP_RIGHT} :right-arrow
-                           #{KeyEvent/VK_LEFT KeyEvent/VK_KP_LEFT} :left-arrow}
+                           #{KeyEvent/VK_LEFT KeyEvent/VK_KP_LEFT} :left-arrow
+                           #{KeyEvent/VK_SPACE} :space}
                           (map (fn [[k v]] [(if (coll? k) k #{k}) v]))
                           (mapcat (fn [[k v]] (map #(vector % v) k)))
                           (into {})))
@@ -101,15 +102,6 @@
     (.fillOval g (- x radius) (- y radius) (* 2 radius) (* 2 radius))
     (.setColor g (.darker color))
     (.drawLine g x y (nth point 0) (nth point 1))))
-
-#_(defn render-circle [^Color color radius ^Graphics g entity]
-  (let [pos (get-int-position entity)
-        x (nth pos 0)
-        y (nth pos 1)
-        radius (int radius)]
-    (.setColor g color)
-    (.fillOval g (- x radius) (- y radius) (* 2 radius) (* 2 radius))
-    (.setColor g (.darker color))))
 
 (defn render-entity [^Graphics g entity]
   (let [render (-> entity (get-component :renderable) :fn)]

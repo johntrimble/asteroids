@@ -14,13 +14,9 @@
                                        collidable
                                        collision-detection-system
                                        collision-physics-system
-                                       moment-inertia]])
-  (:import [javax.swing JFrame JPanel JButton]
-           [java.awt Font Color Graphics Graphics2D BorderLayout Dimension Polygon]
-           [java.awt.geom AffineTransform]
-           [java.awt.color ColorSpace]
-           [java.awt.font FontRenderContext]
-           [java.awt.event ActionListener]
+                                       moment-inertia
+                                       get-vel-point]])
+  (:import [java.awt Graphics Graphics2D Color]
            [java.util Timer TimerTask]))
 
 ;; Components
@@ -53,9 +49,24 @@
 (defn rotate-left-intent []
   {:name :rotate-left-intent})
 
+(defn fire-intent []
+  {:name :fire-intent})
+
 (defn thrust [acc]
   {:name :thrust, :vector acc})
 
+(defn asteroid-explosive-death []
+  {:name :asteroid-explosive-death})
+
+(defn projectile []
+  {:name :projectile})
+
+(defn weapon
+  ([cooldown] (weapon cooldown 0))
+  ([cooldown cooldown-remaining]
+   {:name :weapon,
+    :cooldown cooldown,
+    :cooldown-remaining cooldown-remaining}))
 
 ;; component utility functions
 
@@ -128,6 +139,8 @@
     (entity (position [x y])
             (collidable)
             (rotation ap)
+            (health (* 0.5 (* Math/PI (* r r))))
+            (asteroid-explosive-death)
             (velocity [vx vy])
             (moment-inertia (* 0.25 Math/PI (Math/pow r 4)))
             (angular-velocity av)
@@ -137,11 +150,38 @@
                                  (Color. 135 108 46)
                                  r)))))
 
+(defn asteroid [{m :mass
+                 v :velocity
+                 w :angular-velocity
+                 pos :position}]
+  (let [[x y] pos
+        r (Math/sqrt (/ m Math/PI))
+        rot (- (rand (* 4 Math/PI)) (* 2 Math/PI))
+        ast (entity (position pos)
+                    (mass m)
+                    (velocity v)
+                    (health (max 100 (* 0.5 (* Math/PI (* r r)))))
+                    (asteroid-explosive-death)
+                    (angular-velocity w)
+                    (position pos)
+                    (rotation rot)
+                    (aabb [(- x r) (- y r)]
+                          [(+ x r) (+ y r)])
+                    (renderable (partial render-circle
+                                         (Color. 135 108 46)
+                                         r)))]
+    (if (< m 50)
+      (-> ast
+          (assoc-component (ttl 100))
+          (assoc-component (fadeout 100)))
+      (assoc-component ast (collidable)))))
+
 (defn add-ship [world]
   (let [ship (entity (position [400 400])
                      (velocity [0 0])
                      (acceleration [0 0])
                      (rotation 0)
+                     (weapon 10)
                      (collidable)
                      (player)
                      (health 10000)
@@ -157,14 +197,19 @@
 ;; World Generation
 
 (defn add-asteroids [world]
-  (->> (range 5)
+  (->> (range 8)
        (map (fn [_] (generate-asteroid)))
        (reduce assoc-entity world)))
 
 (defn generate-world []
-  (-> {}
-      (add-ship)
-      (add-asteroids)))
+  (let [ast (assoc-component (asteroid {:mass 400
+                                        :velocity [5 5]
+                                        :angular-velocity 0.1
+                                        :position [300 300]})
+                             (health 1000))]
+    (-> {}
+        (add-ship)
+        (add-asteroids))))
 
 
 ;; Systems
@@ -225,7 +270,7 @@
 (defn impulse-damage-system [world]
   (->> world
        (get-entities)
-       (filter #(has-components? % :health :impulse))
+       (filter #(has-components? % :health :impulse :player))
        (map (partial handle-impulse-damage world))
        (reduce assoc-entity world)))
 
@@ -275,13 +320,15 @@
        (get-entities)
        (map #(reduce dissoc % [:rotate-right-intent
                                :rotate-left-intent
-                               :thrust-intent]))
+                               :thrust-intent
+                               :fire-intent]))
        (reduce assoc-entity world)))
 
 (defn intent-system [world]
   (let [key->intent {:right-arrow rotate-right-intent
                      :left-arrow rotate-left-intent
-                     :up-arrow thrust-intent}
+                     :up-arrow thrust-intent
+                     :space fire-intent}
         world (clear-intents world)]
     (->> world
          get-entities
@@ -303,7 +350,7 @@
         direction-vec (vector/rotate rotation
                                      [1 0])
         intent-vec (if (has-component? entity :thrust-intent)
-                     (vector/scale 0.0125 direction-vec)
+                     (vector/scale 0.05 direction-vec)
                      [0 0])
         thrust-vec (-> entity
                        (get-component :thrust)
@@ -319,9 +366,65 @@
   (->> world
        (get-entities)
        (filter #(or (has-component? % :thrust-intent)
-                   (has-component? % :thrust)))
+                    (has-component? % :thrust)))
        (map apply-thrust)
        (reduce assoc-entity world)))
+
+
+;; firing system
+
+(defn create-projectile [e]
+  (let [r 2
+        rotation (get-rotation e)
+        [[xmin _][xmax _]] (get-aabb e)
+        rotation-vector (vector/rotate rotation [1 0])
+        [x y] (vector/add (get-position e)
+                          (vector/scale (- xmax xmin)
+                                        rotation-vector))
+        v (vector/scale 5 rotation-vector)]
+    (entity (position [x y])
+            (projectile)
+            (collidable)
+            (ttl 60)
+            (velocity (vector/add v (get-velocity e)))
+            (health 5)
+            (aabb [(- x r) (- y r)]
+                  [(+ x r) (+ y r)])
+            (renderable (partial render-circle
+                                 Color/GREEN
+                                 r)))))
+
+(defn firing-system [world]
+  (->> world
+       (get-entities)
+       (filter #(has-components? % :fire-intent :weapon))
+       (filter #(== 0 (:cooldown-remaining (get-component % :weapon))))
+       (map create-projectile)
+       (reduce assoc-entity world)))
+
+
+;; projectile system
+
+(defn add-damage [e dmg]
+  (let [current-dmg (:damage (get-component e :damage) 0)
+        dmg (+ dmg current-dmg)]
+    (assoc-component e (damage dmg))))
+
+(defn update-projectile [world e]
+  (let [world (dissoc-entity world e)]
+    (->> (get-component e :collidable)
+         (:entity-ids)
+         (map (partial get-entity world))
+         (filter identity)
+         (map #(add-damage % 100))
+         (reduce assoc-entity world))))
+
+(defn projectile-collision-resolution-system [world]
+  (->> world
+       (get-entities)
+       (filter #(has-components? % :projectile :collidable))
+       (filter #(seq (:entity-ids (get-component % :collidable))))
+       (reduce update-projectile world)))
 
 
 ;; rotation system
@@ -344,6 +447,59 @@
        (map update-rotate)
        (reduce assoc-entity world)))
 
+;; cooldown system
+(defn update-cooldowns [entity]
+  (->> [:weapon]
+       (map (partial get-component entity))
+       (map #(assoc % :cooldown-remaining (mod (dec (:cooldown-remaining %))
+                                               (:cooldown %))))
+       (reduce assoc-component entity)))
+
+(defn cooldown-system [world]
+  (->> world
+       (get-entities)
+       (filter #(has-components? % :weapon))
+       (map update-cooldowns)
+       (reduce assoc-entity world)))
+
+;; asteroid explosive death
+(defn partition-number
+  ([n partition-count] (partition-number n partition-count []))
+  ([n partition-count acc]
+   (if (== partition-count 0)
+     acc
+     (let [p (rand n)]
+       (recur (- n p) (- partition-count 1) (conj acc p))))))
+
+(defn do-explosive-death [world entity]
+  (let [[[xmin ymin] [xmax ymax]] (get-aabb entity)
+        mass (get-mass entity)
+        lost-mass (* 0 mass) ; no mass lost
+        mass (- mass lost-mass)
+        c (rand-nth (range 2 5))
+        child-masses (partition-number mass c)
+        [x y] (get-position entity)
+        child-positions (for [i (range c)]
+                          [(rand-nth (range xmin xmax))
+                           (rand-nth (range ymin ymax))])
+        child-velocities (map #(get-vel-point entity %)
+                              child-positions)
+        asteroids (map (fn [p v m]
+                         (asteroid {:velocity v
+                                    :angular-velocity (get-angular-velocity entity)
+                                    :mass m
+                                    :position p}))
+                       child-positions child-velocities child-masses)
+        world (dissoc-entity world entity)]
+    (->> asteroids
+        (reduce assoc-entity world))))
+
+(defn asteroid-death-system [world]
+  (->> world
+       (get-entities)
+       (filter #(has-components? % :asteroid-explosive-death :health))
+       (filter #(> 1 (:current (get-component % :health))))
+       (reduce do-explosive-death world)))
 
 ;; boot her up baby!
 
@@ -355,15 +511,19 @@
 
 (defn next-world [world]
   (-> world
+      cooldown-system
       keyboard-input-system
       intent-system
       rotate-system
       thrust-system
+      firing-system
       physics-system
       collision-detection-system
+      projectile-collision-resolution-system
       collision-physics-system
       impulse-damage-system
       damage-resolution-system
+      asteroid-death-system
       ttl-system
       fadeout-system
       health-bar-system))

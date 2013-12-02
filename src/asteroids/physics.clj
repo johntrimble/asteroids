@@ -131,7 +131,7 @@
   (let [entities (->> world
                       :entities
                       vals
-                      (filter #(has-component? % :aabb)))
+                      (filter #(has-components? % :aabb :collidable)))
 
         entity-box-m (->> entities
                           (map (juxt get-id
@@ -290,6 +290,9 @@
   (if (seq pairs)
     (->> pairs
          (map (partial map (partial get-entity world)))
+         ;; Some entities may have been removed from the world after the
+         ;; collision was detected, so filter them out.
+         (filter (partial every? identity))
          (map (partial apply calc-collision-manifold world))
          (resolve-collisions world))
     world))
