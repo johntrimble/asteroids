@@ -1,7 +1,8 @@
 (ns asteroids.vector
   (:require [clojure.string :refer [split-lines lower-case join]]
             [clojure.walk :refer [macroexpand-all]]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all]
+            [asteroids.math :as math]))
 
 (defn add [a b]
   (mapv + a b))
@@ -10,8 +11,8 @@
   (mapv - a b))
 
 (defn length [[x y]]
-  (Math/sqrt (+ (Math/pow x 2)
-                (Math/pow y 2))))
+  (math/sqrt (+ (math/pow x 2)
+                (math/pow y 2))))
 
 (defn scale [s v]
   (mapv (partial * s) v))
@@ -25,10 +26,10 @@
 (defn rotate [theta v]
   (let [x (nth v 0)
         y (nth v 1)]
-    [(- (* x (Math/cos theta))
-        (* y (Math/sin theta)))
-     (+ (* x (Math/sin theta))
-        (* y (Math/cos theta)))]))
+    [(- (* x (math/cos theta))
+        (* y (math/sin theta)))
+     (+ (* x (math/sin theta))
+        (* y (math/cos theta)))]))
 
 (defn perp
   "Returns a vector with the same length as v but rotated counterclockwise

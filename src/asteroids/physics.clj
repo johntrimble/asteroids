@@ -4,9 +4,8 @@
             [clojure.test :refer :all]
             [clojure.set :as set]
             [asteroids.vector :as vector]
-            [asteroids.core :refer :all]))
-
-(def infinity Integer/MAX_VALUE)
+            [asteroids.core :refer :all]
+            [asteroids.math :as math]))
 
 (defn impulse [j]
   {:name :impulse, :magnitude j})
@@ -17,7 +16,7 @@
 (defn get-moment-of-inertia [entity]
   (-> entity
       (get-component :moment-inertia)
-      (:tensor infinity)))
+      (:tensor math/infinity)))
 
 (defn get-vel-point
   "Returns the velocity of a given world point on the entity. The value of
@@ -87,7 +86,7 @@
                                            :max-angular-velocity))
                 Integer/MAX_VALUE)
           nv (+ v acc)
-          s (Math/abs nv)
+          s (math/abs nv)
           nv (if (> s m)
                (* (/ nv s) m)
                nv)]
@@ -155,7 +154,7 @@
                     (let [box (get-aabb entity)
                           [[xmin ymin] [xmax ymax]] box
                           [x y] (get-position entity)
-                          r (Math/abs (- xmax x))]
+                          r (math/abs (- xmax x))]
                       (assert (not (< r 0)) "The circle radius cannot be negative.")
                       [[x y] r]))]
     (->> pairs
@@ -176,8 +175,8 @@
         ;; TODO: there is not currently support for different shapes for rigid
         ;; bodies, so everything is just assumed to be a circle inscribed
         ;; inside the AABB.
-        r1 (Math/abs (- xmax1 (first pos1)))
-        r2 (Math/abs (- xmax2 (first pos2)))
+        r1 (math/abs (- xmax1 (first pos1)))
+        r2 (math/abs (- xmax2 (first pos2)))
         d (vector/length trans)]
     (cond
      ;; case 1: edge case where both objects are right on top of each other
@@ -350,7 +349,7 @@
 
          (map (fn [[ne e]]
                 (assoc-component ne
-                                 (impulse (Math/abs (* (get-mass ne) ; assume mass didn't change
+                                 (impulse (math/abs (* (get-mass ne) ; assume mass didn't change
                                                        (vector/length (vector/sub (get-velocity e)
                                                                                   (get-velocity ne)))))))))
          (reduce assoc-entity world))))

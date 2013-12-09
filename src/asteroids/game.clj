@@ -15,7 +15,8 @@
                                        collision-detection-system
                                        collision-physics-system
                                        moment-inertia
-                                       get-vel-point]])
+                                       get-vel-point]]
+            [asteroids.math :as math])
   (:import [java.awt Graphics Graphics2D Color]
            [java.util Timer TimerTask]))
 
@@ -134,17 +135,17 @@
         ymax (int (+ y r))
         vx (rand-nth (range -5 5))
         vy (rand-nth (range -5 5))
-        av (* 0.01 (- (rand (* 4 Math/PI)) (* 2 Math/PI)))
-        ap (* 0.01 (- (rand (* 4 Math/PI)) (* 2 Math/PI)))]
+        av (* 0.01 (- (rand (* 4 math/pi)) (* 2 math/pi)))
+        ap (* 0.01 (- (rand (* 4 math/pi)) (* 2 math/pi)))]
     (entity (position [x y])
             (collidable)
             (rotation ap)
-            (health (* 0.5 (* Math/PI (* r r))))
+            (health (* 0.5 (* math/pi (* r r))))
             (asteroid-explosive-death)
             (velocity [vx vy])
-            (moment-inertia (* 0.25 Math/PI (Math/pow r 4)))
+            (moment-inertia (* 0.25 math/pi (math/pow r 4)))
             (angular-velocity av)
-            (mass (* Math/PI (* r r)))
+            (mass (* math/pi (* r r)))
             (aabb [xmin ymin] [xmax ymax])
             (renderable (partial render-circle
                                  (Color. 135 108 46)
@@ -155,12 +156,12 @@
                  w :angular-velocity
                  pos :position}]
   (let [[x y] pos
-        r (Math/sqrt (/ m Math/PI))
-        rot (- (rand (* 4 Math/PI)) (* 2 Math/PI))
+        r (math/sqrt (/ m math/pi))
+        rot (- (rand (* 4 math/pi)) (* 2 math/pi))
         ast (entity (position pos)
                     (mass m)
                     (velocity v)
-                    (health (max 100 (* 0.5 (* Math/PI (* r r)))))
+                    (health (max 100 (* 0.5 (* math/pi (* r r)))))
                     (asteroid-explosive-death)
                     (angular-velocity w)
                     (position pos)
@@ -186,9 +187,9 @@
                      (player)
                      (health 10000)
                      (aabb [390 390] [410 410])
-                     (mass (* Math/PI (* 10 10)))
+                     (mass (* math/pi (* 10 10)))
                      (max-velocity 10)
-                     (moment-inertia (* 0.25 Math/PI (Math/pow 10 4)))
+                     (moment-inertia (* 0.25 math/pi (math/pow 10 4)))
                      (keyboard-input)
                      (renderable render-ship))
         health-bar (health-bar-entity (get-id ship))]
@@ -433,7 +434,7 @@
   (let [angle (-> entity
                     (get-component :rotation)
                     (:angle 0))
-        delta (* 0.01 (* 2 Math/PI))
+        delta (* 0.01 (* 2 math/pi))
         delta (if (get-component entity :rotate-left-intent)
                 (* -1 delta)
                 delta)
