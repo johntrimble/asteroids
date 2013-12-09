@@ -1,7 +1,5 @@
 (ns asteroids.vector
   (:require [clojure.string :refer [split-lines lower-case join]]
-            [clojure.walk :refer [macroexpand-all]]
-            [clojure.test :refer :all]
             [asteroids.math :as math]))
 
 (defn add [a b]
@@ -56,11 +54,3 @@
   (reduce #(and %1 %2)
           true
           (map == (repeat 0) a)))
-
-(deftest vector-test
-  (is (= [3 5]
-         (add [1 2] [2 3])))
-  (is (= [-1 -1]
-         (sub [1 2] [2 3])))
-  (is (== 5.0
-          (length [3 4]))))
