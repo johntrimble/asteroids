@@ -1,4 +1,5 @@
-(ns asteroids.math)
+(ns asteroids.math
+  (:require [cljs-uuid-utils]))
 
 (def pi js/Math.PI)
 
@@ -13,3 +14,6 @@
 (def cos js/Math.cos)
 
 (def sin js/Math.sin)
+
+(defn uuid []
+  (cljs-uuid-utils/uuid-string (cljs-uuid-utils/make-random-uuid)))

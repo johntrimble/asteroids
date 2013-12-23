@@ -198,7 +198,7 @@
 ;; World Generation
 
 (defn add-asteroids [world]
-  (->> (range 8)
+  (->> (range 20)
        (map (fn [_] (generate-asteroid)))
        (reduce assoc-entity world)))
 

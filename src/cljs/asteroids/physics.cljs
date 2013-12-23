@@ -23,6 +23,7 @@
                                     entity
                                     get-entity
                                     assoc-entity
+                                    assoc-entities
                                     get-entities
                                     get-id
                                     get-velocity
@@ -95,10 +96,9 @@
   (let [velocity (or (get-velocity entity)
                      [0 0])
         current-pos (get-position entity)
-        new-pos (->> current-pos
-                     (vector/add velocity)
-                     (map #(mod % 800))
-                     (vec))]
+        new-pos (vector/add velocity current-pos)
+        new-pos [(mod (nth new-pos 0) 800)
+                 (mod (nth new-pos 1) 800)]]
     (assoc-component entity (position new-pos))))
 
 (defn update-angular-acceleration [entity]
@@ -161,24 +161,69 @@
     (for [i (range s) j (range i)]
       [(nth coll i) (nth coll j)])))
 
+(defn- pair [a b]
+  [a b]
+  (if (< 0 (compare a b))
+         [a b]
+         [b a]))
 
+(defn- find-collisions-along-axis
+  "Finds collisions along an axis where min-field and max-field are the
+  property names of the minimum and maximum coordinates along the axis. The
+  mins-array and maxes-array are arrays of objects having the fields
+  corresponding to the values of min-field and max-field, as well as an
+  arbitrary id property (though it must be comparable). The arrays do not need
+  to be sorted, and might be reordered by this function."
+  [min-field max-field mins-array maxes-array]
+  (let [aabbs-min (.sort mins-array #(- (aget %1 min-field) (aget %2 min-field)))
+        aabbs-max (.sort maxes-array #(- (aget %1 max-field) (aget %2 max-field)))
+        size (count aabbs-max )]
+    (loop [i 0, j 0, active #{}, collisions (transient #{})]
+      (if (and (< i size) (< j size))
+        (let [a (aget aabbs-min i)
+              b (aget aabbs-max j)
+              a-id (aget a "id")
+              b-id (aget b "id")]
+          (cond
+           ;; case 1: an aabb has become active
+           (< (aget a min-field) (aget b max-field))
+           (recur (inc i)
+                  j
+                  (conj active a-id)
+                  (reduce #(conj! %1 (pair %2 a-id))
+                          collisions
+                          active))
+
+           ;; case 2: an aabb has become inactive
+           :default
+           (recur i
+                  (inc j)
+                  (disj active b-id)
+                  collisions)))
+        (persistent! collisions)))))
+
+;; Arrays used here for performance reasons.
 (defn find-aabb-collisions [world]
-  (let [entities (->> world
-                      :entities
-                      vals
-                      (filter #(has-components? % :aabb :collidable)))
-
-        entity-box-m (->> entities
-                          (map (juxt get-id
-                                     (comp :vector
-                                           #(get-component % :aabb))))
-                          (into {}))
-        ids (map get-id entities)
-        pairs (all-pairs ids)]
-    (->> pairs
-         (filter (fn [pair]
-                   (boxes-overlap? (get entity-box-m (first pair))
-                                   (get entity-box-m (second pair))))))))
+  (let [aabbs (->> world
+                   (get-entities)
+                   (filter #(has-components? % :aabb :collidable))
+                   (map (fn [e]
+                          (let [id (get-id e)
+                                [[xmin ymin] [xmax ymax]] (:vector (get-component e :aabb))
+                                obj (js-obj)]
+                            (aset obj "xmin" xmin)
+                            (aset obj "ymin" ymin)
+                            (aset obj "xmax" xmax)
+                            (aset obj "ymax" ymax)
+                            (aset obj "id" id)
+                            obj)))
+                   (to-array))
+        aabbs-min aabbs
+        aabbs-max (.slice aabbs 0)
+        x-collided (find-collisions-along-axis "xmin" "xmax" aabbs-min aabbs-max)
+        y-collided (find-collisions-along-axis "ymin" "ymax" aabbs-min aabbs-max)]
+    (seq (set/intersection x-collided
+                           y-collided))))
 
 (defn circles-collide? [c1 r1 c2 r2]
   (> (+ r1 r2) (vector/length (vector/sub c1 c2))))
@@ -313,7 +358,7 @@
 (defn resolve-collisions [world manifolds]
   (->> manifolds
        (mapcat (partial resolve-collision world))
-       (reduce assoc-entity world)))
+       (assoc-entities world)))
 
 ;; NOTE: This does not handle collisions involving more than 2 objects well.
 ;; What happens currently is that each pair of colliding entities is handled
@@ -336,23 +381,24 @@
     (handle-collisions world collisions)))
 
 (defn update-physics [world]
-  (->> world
-       (:entities)
-       (fmap update-acceleration)
-       (fmap update-angular-acceleration)
-       (fmap update-velocity)
-       (fmap update-angular-velocity)
-       (fmap update-position)
-       (fmap update-rotation)
-       (fmap update-aabb)
-       (assoc-in world [:entities])))
+  (assoc world
+    :entities
+    (into {} (for [[id e] (:entities world)]
+               [id (-> e
+                       update-acceleration
+                       update-angular-acceleration
+                       update-velocity
+                       update-angular-velocity
+                       update-position
+                       update-rotation
+                       update-aabb)]))))
 
 (defn clear-collisions [world]
   (->> world
        (get-entities)
        (filter #(has-component? % :collidable))
        (map #(assoc-component % (collidable)))
-       (reduce assoc-entity world)))
+       (assoc-entities world)))
 
 (defn physics-system [world]
   (-> world
@@ -376,7 +422,7 @@
          (map (fn [e]
                 (assoc-component e
                                  (collidable (get collision-map (get-id e))))))
-         (reduce assoc-entity world))))
+         (assoc-entities world))))
 
 (defn update-with-impulse [old-world world]
   (let [has-mass-velocity? #(and (has-component? % :mass)
@@ -392,7 +438,7 @@
                                  (impulse (math/abs (* (get-mass ne) ; assume mass didn't change
                                                        (vector/length (vector/sub (get-velocity e)
                                                                                   (get-velocity ne)))))))))
-         (reduce assoc-entity world))))
+         (assoc-entities world))))
 
 (defn collision-physics-system [world]
   (->> world

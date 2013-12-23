@@ -13,3 +13,5 @@
 (defn cos [theta] (Math/cos theta))
 
 (defn sin [theta] (Math/sin theta))
+
+(defn uuid [] (str (java.util.UUID/randomUUID)))

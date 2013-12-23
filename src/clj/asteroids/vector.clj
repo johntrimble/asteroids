@@ -3,23 +3,24 @@
             [asteroids.math :as math]))
 
 (defn add [a b]
-  (mapv + a b))
+  [(+ (nth a 0) (nth b 0))
+   (+ (nth a 1) (nth b 1))])
 
 (defn sub [a b]
-  (mapv - a b))
+  [(- (nth a 0) (nth b 0))
+   (- (nth a 1) (nth b 1))])
 
-(defn length [[x y]]
-  (math/sqrt (+ (math/pow x 2)
-                (math/pow y 2))))
+(defn length [v]
+  (math/sqrt (+ (math/pow (nth v 0) 2)
+                (math/pow (nth v 1) 2))))
 
 (defn scale [s v]
-  (mapv (partial * s) v))
+  [(* s (nth v 0))
+   (* s (nth v 1))])
 
 (defn dot [a b]
-  (->> (interleave a b)
-       (partition 2)
-       (map (fn [[a b]] (* a b)))
-       (reduce +)))
+  (+ (* (nth a 0) (nth b 0))
+     (* (nth a 1) (nth b 1))))
 
 (defn rotate [theta v]
   (let [x (nth v 0)
@@ -38,7 +39,8 @@
 
 (defn normalize [v]
   (let [l (length v)]
-    (mapv #(/ % l) v)))
+    [(/ (nth v 0) l)
+     (/ (nth v 1) l)]))
 
 (defn project [a b]
   (let [ub (normalize b)]
@@ -51,6 +53,4 @@
           (map == a b)))
 
 (defn zero-vector? [a]
-  (reduce #(and %1 %2)
-          true
-          (map == (repeat 0) a)))
+  (== 0 (nth a 0) (nth a 1)))

@@ -2,3 +2,7 @@
 .nrepl*
 .idea
 target
+bower_components
+private
+pom.xml
+*~

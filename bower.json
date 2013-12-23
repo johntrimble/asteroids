@@ -1,0 +1,7 @@
+{
+  "name": "CLJS Example",
+  "version": "0.0.0",
+  "dependencies": {
+    "pixi": "~1.3.0"
+  }
+}

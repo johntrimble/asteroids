@@ -1,11 +1,8 @@
 (ns asteroids.core
   (:require [clojure.string :refer [split-lines lower-case join]]
-            [clojure.walk :refer [macroexpand-all]]
-            [clojure.test :refer :all]
             [clojure.set :as set]
-            [asteroids.vector :as vector]))
-
-(defn uuid [] (str (java.util.UUID/randomUUID)))
+            [asteroids.vector :as vector]
+            [asteroids.math :refer [uuid]]))
 
 ;; basic components
 (defn position [p]
@@ -125,6 +122,12 @@
 (defn get-mass [entity]
   (-> entity (get-component :mass) :mass))
 
+(defn assoc-entities [world entities]
+  (let [entity-map (transient (or (:entities world) {}))]
+    (->> entities
+         (reduce #(assoc! %1 (get-id %2) %2) entity-map)
+         (persistent!)
+         (assoc world :entities))))
 
 (defn dissoc-entity [world entity]
   (assoc world :entities (dissoc (:entities world)
