@@ -15,11 +15,8 @@
             [asteroids.intents :as intents])
   (:require-macros [dommy.macros :refer [sel1]]))
 
-(def stats (atom {}))
+(set! *print-fn* #(.log js/console %))
 
-(def stats-disp (js/PIXI.Text. "some fancy text"
-                               (make-js-map {:fill "green"
-                                             :font "Arial 8px"})))
 (def update-world-interval 16)
 
 (def renderer (js/PIXI.autoDetectRenderer 800 800 nil false true))
@@ -46,8 +43,6 @@
 
 (swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
 
-(set! *print-fn* #(.log js/console %))
-
 (defn next-world [world]
   ;; strange use of let-expression is to make watch-selection easier.
   (let [world (keyboard/keyboard-system world)
@@ -59,21 +54,13 @@
         world (physics/collision-physics-system world)]
     world))
 
-(defn update-stats-disp [disp stats]
-  (.setText disp
-            (reduce (fn [acc x] (str acc "\n" x))
-                    (map (fn [[k v]] (str k "    " v)) stats))))
-
 (defn animationLoop []
   (update-stage-system! @world stage)
   (.render renderer stage)
   (js/requestAnimFrame animationLoop))
 
-(.addChild stage stats-disp)
-
 (defn update-game-state []
-  (swap! world next-world)
-  (swap! stats (fn [s] (update-stats-disp stats-disp s) {})))
+  (swap! world next-world))
 
 (let [timer (goog.Timer. update-world-interval)]
   (. timer (start))
