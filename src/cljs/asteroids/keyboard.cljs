@@ -19,19 +19,31 @@
 
 (defn key-code [e] (.-keyCode e))
 
+(defn prevent-default [e]
+  (if (.-preventDefault e)
+    (.preventDefault e)
+    (set! (.-returnValue e) false)))
+
 (defn key-handler [event-type e]
   (let [c (key-code e)]
     (when (contains? captured-keys c)
-      (.preventDefault e)
-      (swap! key-events conj [event-type (key-map c)]))))
+      (prevent-default e)
+      (swap! key-events conj [event-type (key-map c)])
+      false)))
 
 (defn update-pressed-keys! [active-keys key-events]
-  (swap! pressed-keys
+  (swap! active-keys
          (fn [pressed]
            (reduce (fn [active [t k]]
-                     (if (= t :keydown)
-                       (conj pressed k)
-                       (disj pressed k)))
+                     (cond
+                      (= t :keydown)
+                      (conj active k)
+
+                      (= t :keyup)
+                      (disj active k)
+
+                      :default
+                      active))
                    pressed
                    key-events))))
 
@@ -50,9 +62,9 @@
     (assoc world :active-keys active)))
 
 (dommy/listen! js/document
-               :keydown
-               #(key-handler :keydown %))
-
-(dommy/listen! js/document
                :keyup
                #(key-handler :keyup %))
+
+(dommy/listen! js/document
+               :keydown
+               #(key-handler :keydown %))

@@ -11,7 +11,8 @@
             [asteroids.math :as math]
             [asteroids.physics :as physics]
             [asteroids.graphics :as graphics]
-            [asteroids.keyboard :as keyboard])
+            [asteroids.keyboard :as keyboard]
+            [asteroids.intents :as intents])
   (:require-macros [dommy.macros :refer [sel1]]))
 
 (def stats (atom {}))
@@ -21,7 +22,7 @@
                                              :font "Arial 8px"})))
 (def update-world-interval 16)
 
-(def renderer (js/PIXI.autoDetectRenderer 800 800))
+(def renderer (js/PIXI.autoDetectRenderer 800 800 nil false true))
 
 (def stage (js/PIXI.Stage. 0x000000))
 
@@ -43,13 +44,16 @@
 
 (def world (atom {}))
 
-(swap! world (fn [_] (levels/random-asteroid-field)))
+(swap! world (fn [_] (levels/spawn-ship (levels/empty-world))))
 
 (set! *print-fn* #(.log js/console %))
 
 (defn next-world [world]
   ;; strange use of let-expression is to make watch-selection easier.
   (let [world (keyboard/keyboard-system world)
+        world (intents/intent-system world)
+        world (intents/rotation-system world)
+        world (intents/thrust-system world)
         world (physics/physics-system world)
         world (physics/collision-detection-system world)
         world (physics/collision-physics-system world)]

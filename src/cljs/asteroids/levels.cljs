@@ -48,3 +48,25 @@
     (->> (range 20)
          (map (fn [_] (create-rand-asteroid 800 800)))
          (reduce core/assoc-entity {})))
+
+(defn empty-world []
+  {:entities {}})
+
+(defn spawn-ship [world]
+  (let [ship (core/entity (core/position [400 400])
+                          (core/velocity [0 0])
+                          (core/acceleration [0 0])
+                          (core/rotation 0)
+                          (physics/collidable)
+                          (core/player)
+                          (core/aabb [390 390] [410 410])
+                          (core/mass (* math/pi (* 10 10)))
+                          (core/max-velocity 10)
+                          (physics/moment-inertia (* 0.25 math/pi (math/pow 10 4)))
+                          (graphics/display-object (doto (js/PIXI.Graphics.)
+                                                     (.beginFill 0x00FF00)
+                                                     (.moveTo 10 0)
+                                                     (.lineTo -6 -6)
+                                                     (.lineTo -6 6)
+                                                     (.endFill))))]
+    (core/assoc-entity world ship)))

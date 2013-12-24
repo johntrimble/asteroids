@@ -100,3 +100,35 @@
               (keyboard/key-handler :keyup (mock-key-event 32))
               (should-contain :space (:active-keys (keyboard/keyboard-system {})))
               (should-not-contain :space (:active-keys (keyboard/keyboard-system {})))))
+
+(describe "update-pressed-keys!"
+          (it "should disable active keys on keyup events"
+              (let [active-keys (atom #{:up})]
+                (keyboard/update-pressed-keys! active-keys
+                                               [[:keyup :up]])
+                (should-not-contain :up @active-keys)))
+          (it "should make keys active on keydown events"
+              (let [active-keys (atom #{})]
+                (keyboard/update-pressed-keys! active-keys
+                                               [[:keydown :up]])
+                (should-contain :up @active-keys)))
+          (it "should handle multiple events"
+              (let [active-keys (atom #{})]
+                (keyboard/update-pressed-keys! active-keys
+                                               [[:keydown :up]
+                                                [:keydown :down]])
+                (should-contain :up @active-keys)
+                (should-contain :down @active-keys)
+                (should= 2 (count @active-keys))))
+          (it "should process events in order"
+              (let [active-keys (atom #{})]
+                (keyboard/update-pressed-keys! active-keys
+                                               [[:keyup :up]
+                                                [:keydown :up]])
+                (should-contain :up @active-keys)
+                (reset! active-keys #{})
+                (keyboard/update-pressed-keys! active-keys
+                                               [[:keydown :up]
+                                                [:keyup :up]])
+                (should-not-contain :up @active-keys)
+                (should= 0 (count @active-keys)))))

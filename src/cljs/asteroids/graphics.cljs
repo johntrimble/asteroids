@@ -6,17 +6,20 @@
                                     get-entities
                                     get-id
                                     get-component
-                                    get-entity]]))
+                                    get-entity
+                                    get-rotation]]))
 
 (defn display-object [disp]
   {:name :display-object, :obj disp})
 
 (defn update-display-object! [world entity]
   (let [[x y] (get-position entity)
+        rotation (or (get-rotation entity) 0)
         disp (:obj (get-component entity :display-object))
         disp-pos (.-position disp)]
     (set! (.-x disp-pos) x)
     (set! (.-y disp-pos) y)
+    (set! (.-rotation disp) rotation)
     world))
 
 (defn create-update-stage-system
