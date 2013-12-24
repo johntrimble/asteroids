@@ -44,7 +44,7 @@
 
 (def world (atom {}))
 
-(swap! world (fn [_] (levels/spawn-ship (levels/empty-world))))
+(swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
 
 (set! *print-fn* #(.log js/console %))
 
