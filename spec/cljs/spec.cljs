@@ -5,6 +5,7 @@
                                          should=
                                          should-not==
                                          should-not=
+                                         should-not
                                          should
                                          should-not-contain
                                          should-contain]])
@@ -14,7 +15,8 @@
             [asteroids.physics :as physics]
             [asteroids.keyboard :as keyboard]
             [asteroids.health :as health]
-            [asteroids.jsutil :refer [make-js-map]]))
+            [asteroids.jsutil :refer [make-js-map]]
+            [asteroids.asteroids :as asteroids]))
 
 (defn setofy [collisions]
   (->> collisions
@@ -145,3 +147,14 @@
                                   (core/get-component :health)
                                   :current)]
                 (should== 40 remaining))))
+
+(let [e (-> (asteroids/create-asteroid {})
+            (core/assoc-component (health/health 10 0)))
+      world (core/assoc-entity {} e)
+      world (asteroids/asteroid-death-system world)
+      entity-count (->> world core/get-entities count)]
+  (describe "asteroid-death-system"
+            (it "should break up asteroids when their health is zero"
+                (should (> entity-count 1)))
+            (it "should remove asteroids with 0 health"
+                (should-not (core/get-entity world (core/get-id e))))))

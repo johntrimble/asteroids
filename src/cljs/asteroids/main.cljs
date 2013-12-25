@@ -72,8 +72,7 @@
         world (physics/collision-physics-system world)
         world (health/damage-resolution-system world)
         world (asteroids/asteroid-death-system world)
-        world (core/ttl-system world)
-        world (debug-world world)]
+        world (core/ttl-system world)]
     world))
 
 (defn animationLoop []
