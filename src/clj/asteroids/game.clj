@@ -33,7 +33,7 @@
   ([duration remaining]
    {:name :fadeout, :duration duration, :remaining remaining}))
 
-(defn ttl
+#_(defn ttl
   ([duration] (ttl duration duration))
   ([duration remaining]
    {:name :ttl, :duration duration, :remaining remaining}))
@@ -236,14 +236,14 @@
 
 ;; time-to-live system
 
-(defn update-ttl [entity]
+#_(defn update-ttl [entity]
   (let [component (get-component entity :ttl)
         duration (:duration component)
         remaining (- (:remaining component) 1)]
     (assoc-component entity
                      (ttl duration remaining))))
 
-(defn ttl-system [world]
+#_(defn ttl-system [world]
   (let [ttl-entities (->> world
                           get-entities
                           (filter #(has-component? % :ttl))

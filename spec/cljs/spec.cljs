@@ -13,6 +13,7 @@
             [asteroids.core :as core]
             [asteroids.physics :as physics]
             [asteroids.keyboard :as keyboard]
+            [asteroids.health :as health]
             [asteroids.jsutil :refer [make-js-map]]))
 
 (defn setofy [collisions]
@@ -132,3 +133,15 @@
                                                 [:keyup :up]])
                 (should-not-contain :up @active-keys)
                 (should= 0 (count @active-keys)))))
+
+(describe "damage-resolution-system"
+          (it "should apply damage"
+              (let [e (core/entity (health/health 100 50)
+                                   (health/damage 10))
+                    world (core/assoc-entity {} e)
+                    world (health/damage-resolution-system world)
+                    remaining (-> world
+                                  (core/get-entity (core/get-id e))
+                                  (core/get-component :health)
+                                  :current)]
+                (should== 40 remaining))))

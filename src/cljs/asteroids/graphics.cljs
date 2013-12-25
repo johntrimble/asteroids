@@ -40,7 +40,7 @@
 
         ;; Remove defunct display objects
         (dorun (->> (set/difference prev-ids ids)
-                    (map (comp get-entity prev-world))
+                    (map #(get-entity prev-world %))
                     (map #(:obj (get-component % :display-object)))
                     (map #(.removeChild stage %))))
 
@@ -55,5 +55,5 @@
         ;; Update display objects
         (let [world (reduce update-display-object! world entities)]
           ;; update prev-state
-          (swap! prev-state (fn [_] {:world world, :prev-ids ids}))
+          (reset! prev-state {:world world, :prev-ids ids})
           world)))))

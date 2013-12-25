@@ -12,7 +12,10 @@
             [asteroids.physics :as physics]
             [asteroids.graphics :as graphics]
             [asteroids.keyboard :as keyboard]
-            [asteroids.intents :as intents])
+            [asteroids.intents :as intents]
+            [asteroids.projectile :as projectile]
+            [asteroids.asteroids :as asteroids]
+            [asteroids.health :as health])
   (:require-macros [dommy.macros :refer [sel1]]))
 
 (set! *print-fn* #(.log js/console %))
@@ -43,15 +46,34 @@
 
 (swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
 
+(defn debug-world [world]
+  (let [ec (-> world
+               core/get-entities
+               count)
+        cc (->> world
+                core/get-entities
+                (filter #(core/has-component? % :collidable))
+                count)]
+    (println "entity count: " ec)
+    (println "collidable count: " cc))
+  world)
+
 (defn next-world [world]
   ;; strange use of let-expression is to make watch-selection easier.
-  (let [world (keyboard/keyboard-system world)
+  (let [world (projectile/cooldown-system world)
+        world (keyboard/keyboard-system world)
         world (intents/intent-system world)
         world (intents/rotation-system world)
         world (intents/thrust-system world)
+        world (projectile/firing-system world)
         world (physics/physics-system world)
         world (physics/collision-detection-system world)
-        world (physics/collision-physics-system world)]
+        world (projectile/projectile-collision-resolution-system world)
+        world (physics/collision-physics-system world)
+        world (health/damage-resolution-system world)
+        world (asteroids/asteroid-death-system world)
+        world (core/ttl-system world)
+        world (debug-world world)]
     world))
 
 (defn animationLoop []

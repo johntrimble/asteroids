@@ -29,6 +29,11 @@
 (defn max-angular-velocity [theta]
   {:name :max-angular-acceleration, :magnitude theta})
 
+(defn ttl
+  ([duration] (ttl duration duration))
+  ([duration remaining]
+   {:name :ttl, :duration duration, :remaining remaining}))
+
 ;; TODO: This is nice when sweeping across the world looking for intersecting
 ;; AABBs, but wouldn't it make more sense to define this using the body's
 ;; coordinate space for an anchor and then a length and width?
@@ -132,3 +137,31 @@
 (defn dissoc-entity [world entity]
   (assoc world :entities (dissoc (:entities world)
                                  (get-id entity))))
+
+(defn dissoc-entities [world entities]
+  (let [entity-map (transient (or (:entities world) {}))]
+    (->> entities
+         (reduce #(dissoc! %1 (get-id %2)) entity-map)
+         (persistent!)
+         (assoc world :entities))))
+
+;; time-to-live system
+(defn update-ttl [entity]
+  (let [component (get-component entity :ttl)
+        duration (:duration component)
+        remaining (- (:remaining component) 1)]
+    (assoc-component entity
+                     (ttl duration remaining))))
+
+(defn ttl-system [world]
+  (let [ttl-entities (->> world
+                          get-entities
+                          (filter #(has-component? % :ttl))
+                          (map update-ttl))
+        entities-to-remove (->> ttl-entities
+                                (filter #(> 0 (-> %
+                                                  (get-component :ttl)
+                                                  :remaining))))
+        world (assoc-entities world ttl-entities)
+        world (dissoc-entities world entities-to-remove)]
+    world))
