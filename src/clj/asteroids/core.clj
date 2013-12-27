@@ -65,10 +65,17 @@
 (defn has-component? [entity name]
   (get entity name))
 
-(defn has-components? [entity name & more]
-  (->> (concat [name] more)
-       (map has-component? (repeat entity))
-       (reduce #(and %1 %2))))
+(defn has-components?
+  ([entity name]
+   (has-component? entity name))
+  ([entity name1 name2]
+   (and (has-component? entity name1)
+        (has-component? entity name2)))
+  ([entity name1 name2 & more]
+   (and (has-components? entity name1 name2)
+        (->> (concat [name] more)
+             (map has-component? (repeat entity))
+             (reduce #(and %1 %2))))))
 
 (defn get-component [entity comp]
   (get entity comp))
