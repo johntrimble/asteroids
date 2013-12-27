@@ -26,6 +26,15 @@
 
 (def stage (js/PIXI.Stage. 0x000000))
 
+(defn add-layers [stage]
+  (into {} (map (fn [i]
+                  (let [cont (PIXI.DisplayObjectContainer.)]
+                    (.addChild stage cont)
+                    [i cont]))
+                (range 3))))
+
+(def layer-map (add-layers stage))
+
 (def update-stage-system! (graphics/create-update-stage-system))
 
 (dommy/replace-contents! (sel1 :#content)
@@ -76,7 +85,7 @@
     world))
 
 (defn animationLoop []
-  (update-stage-system! @world stage)
+  (update-stage-system! @world layer-map)
   (.render renderer stage)
   (js/requestAnimFrame animationLoop))
 
