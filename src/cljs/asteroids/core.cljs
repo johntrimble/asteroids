@@ -4,30 +4,47 @@
             [asteroids.vector :as vector]
             [asteroids.math :refer [uuid]]))
 
+(defrecord Position [name vector])
+(defrecord Acceleration [name vector])
+(defrecord Velocity [name vector])
+(defrecord MaxVelocity [name magnitude])
+(defrecord Rotation [name angle])
+(defrecord AngularAcceleration [name angle])
+(defrecord AngularVelocity [name angle])
+(defrecord MaxAngularVelocity [name magnitude])
+
+(defrecord Movement [name
+                     acceleration
+                     velocity
+                     max-velocity
+                     angular-acceleration
+                     angular-velocity
+                     max-angular-velocity])
+
 ;; basic components
 (defn position [p]
-  (array-map :name :position, :vector p))
+  (Position. :position p))
 
 (defn acceleration [a]
-  (array-map :name :acceleration, :vector a))
+  (Acceleration. :acceleration a))
 
 (defn velocity [v]
-  (array-map :name :velocity, :vector v))
+  (Velocity. :velocity v))
 
 (defn max-velocity [magnitude]
-  (array-map :name :max-velocity, :magnitude magnitude))
+  (MaxVelocity. :max-velocity magnitude))
 
 (defn rotation [theta]
-  (array-map :name :rotation, :angle theta))
+  (Rotation. :rotation theta))
 
 (defn angular-acceleration [theta]
-  (array-map :name :angular-acceleration, :angle theta))
+  (AngularAcceleration. :angular-acceleration theta))
 
 (defn angular-velocity [theta]
-  (array-map :name :angular-velocity, :angle theta))
+  (AngularVelocity. :angular-velocity theta))
 
 (defn max-angular-velocity [theta]
-  (array-map :name :max-angular-acceleration, :magnitude theta))
+  (MaxAngularVelocity. :max-angular-velocity theta))
 
 (defn ttl
   ([duration] (ttl duration duration))
@@ -92,7 +109,7 @@
 
 (defn entity [& comps]
   (let [entity (persistent! (reduce #(assoc! %1 (:name %2) %2)
-                                    (transient {})
+                                    (transient cljs.core.PersistentArrayMap/EMPTY)
                                     comps))]
     (if (contains? entity :identifier)
       entity
@@ -115,19 +132,32 @@
   (-> entity (get-component :identifier) :id))
 
 (defn get-velocity [entity]
-  (-> entity (get-component :velocity) (:vector [0 0])))
+  (let [c (get-component entity :velocity)]
+    (if c
+      (.-vector c)
+      [0 0])))
 
 (defn get-acceleration [entity]
-  (-> entity (get-component :acceleration) :vector))
+  (let [c (get-component entity :acceleration)]
+    (if c
+      (.-vector c)
+      [0 0])))
 
 (defn get-position [entity]
-  (-> entity (get-component :position) :vector))
+  (let [c (get-component entity :position)]
+    (when c
+      (.-vector c))))
 
 (defn get-angular-velocity [entity]
-  (-> entity (get-component :angular-velocity) (:angle 0)))
+  (let [c (get-component entity :agnular-velocity)]
+    (if c
+      (.-angle c)
+      0)))
 
 (defn get-angular-acceleration [entity]
-  (-> entity (get-component :angular-acceleration) :angle))
+  (let [c (get-component entity :angular-acceleration)]
+    (when c
+      (.-angle c))))
 
 (defn get-rotation [entity]
   (-> entity (get-component :rotation) :angle))

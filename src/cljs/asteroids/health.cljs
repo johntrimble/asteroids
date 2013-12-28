@@ -1,6 +1,7 @@
 (ns asteroids.health
   (:require [asteroids.core :as core]
-            [asteroids.physics :as physics]))
+            [asteroids.physics :as physics])
+  (:require-macros [asteroids.core :refer [transform-entities]]))
 
 ;; Components
 (defn health
@@ -32,18 +33,13 @@
 
 
 ;; damage resolution system
-(defn apply-damage [entity]
-  (let [current (get-in entity [:health :current])
-        max-health (get-in entity [:health :max])
-        damage (get-in entity [:damage :damage])
-        current (- current damage)]
-    (core/assoc-component (dissoc entity :damage)
-                     (health max-health current))))
-
 (defn damage-resolution-system [world]
-  (let [entities (->> world
-                      core/get-entities
-                      (filter #(core/has-components? % :damage :health)))
-        updated-health (map apply-damage entities)
-        world (core/assoc-entities world updated-health)]
-    world))
+  (transform-entities {:components [:damage :health]}
+                      (fn [_ entity]
+                        (let [current (get-in entity [:health :current])
+                              max-health (get-in entity [:health :max])
+                              damage (get-in entity [:damage :damage])
+                              current (- current damage)]
+                          (core/assoc-component (dissoc entity :damage)
+                                                (health max-health current))))
+                      world))

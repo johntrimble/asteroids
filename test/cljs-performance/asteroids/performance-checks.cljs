@@ -111,4 +111,35 @@
               (fake-loop-with-transient-processes-few-entities-system world)))
    (dorun (map (fn [[k v]]
                  (println (str k " average " v " ms")))
+               (perf/report))))
+
+  (measurements
+   (let [world (levels/random-asteroid-field 100)
+         e (first (core/get-entities world))]
+     (samples 1000 :get-velocity-with-component
+              (:vector (core/get-component e :velocity) [0 0]))
+     (samples 1000 :get-velocity-with-get-in
+              (get-in e [:velocity :vector] [0 0]))
+     (samples 1000 :get-velocity-with-or
+              (or (:vector (core/get-component e :velocity)) [0 0])))
+   (dorun (map (fn [[k v]]
+                 (println (str k " average " v " ms")))
+               (perf/report))))
+
+  (measurements
+   ;cljs.core.PersistentArrayMap/EMPTY
+   (let [m-arr (into cljs.core.PersistentArrayMap/EMPTY
+                     [["a" 1] ["b" 2] ["c" 3] ["d" 4]])
+         m-hash (into cljs.core.PersistentHashMap/EMPTY
+                      [["a" 1] ["b" 2] ["c" 3] ["d" 4]])
+         m-obj (into cljs.core.ObjMap/EMPTY
+                     [["a" 1] ["b" 2] ["c" 3] ["d" 4]])]
+     (samples 1 :get-from-array-map
+              (dotimes [_ 500000] (get m-arr "b")))
+     (samples 1 :get-from-hash-map
+              (dotimes [_ 500000] (get m-hash "b")))
+          (samples 1 :get-from-obj-map
+              (dotimes [_ 500000] (get m-obj "b"))))
+   (dorun (map (fn [[k v]]
+                 (println (str k " average " v " ms")))
                (perf/report)))))

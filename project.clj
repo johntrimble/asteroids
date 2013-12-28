@@ -14,8 +14,7 @@
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
   :hooks [leiningen.cljsbuild]
-  :cljsbuild {:crossovers [asteroids.vector
-                           asteroids.core]
+  :cljsbuild {:crossovers [asteroids.vector]
 
               :test-commands
               {"performance" ["phantomjs"

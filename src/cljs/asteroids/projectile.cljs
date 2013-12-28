@@ -4,7 +4,8 @@
             [asteroids.physics :as physics]
             [asteroids.graphics :as graphics]
             [asteroids.intents :as intents]
-            [asteroids.health :as health]))
+            [asteroids.health :as health])
+  (:require-macros [asteroids.core :refer [transform-entities]]))
 
 (def projectile-color 0x00FF00)
 
@@ -39,30 +40,33 @@
                                             (.drawCircle 0 0 r)
                                             (.endFill))))))
 
-(defn update-cooldowns [entity]
-  (->> [:weapon]
-       (map #(core/get-component entity %))
-       (map #(assoc % :cooldown-remaining (mod (dec (:cooldown-remaining %))
-                                               (:cooldown %))))
-       (reduce core/assoc-component entity)))
-
 (defn firing-system [world]
-  (let [entities (->> world
-                      core/get-entities
-                      (filter #(core/has-components? % :fire-intent :weapon))
-                      (filter #(== 0 (:cooldown-remaining (core/get-component % :weapon)))))
-        projectiles (map create-projectile entities)
-        entities (map #(dissoc % :fire-intent) entities)]
-    (-> world
-        (core/assoc-entities projectiles)
-        (core/assoc-entities entities))))
+  (loop [entities (core/get-entities world)
+         output (transient (:entities world))]
+    (if (seq entities)
+      (let [entity (first entities)
+            weapon-comp (core/get-component entity :weapon)]
+        (if (and weapon-comp
+                 (== 0 (:cooldown-remaining weapon-comp))
+                 (core/has-component? entity :fire-intent))
+          (let [p (create-projectile entity)]
+            (recur (next entities)
+                   (-> output
+                       (assoc! (core/get-id p) p)
+                       (assoc! (core/get-id entity) (dissoc entity :fire-intent)))))
+          (recur (next entities) output)))
+      (assoc world :entities (persistent! output)))))
 
 (defn cooldown-system [world]
-  (->> world
-       core/get-entities
-       (filter #(core/has-components? % :weapon))
-       (map update-cooldowns)
-       (core/assoc-entities world)))
+  (transform-entities {:components [:weapon]}
+                      (fn [_ entity]
+                        (let [weapon-component (core/get-component entity :weapon)]
+                          (core/assoc-component entity
+                                                (assoc weapon-component
+                                                  :cooldown-remaining
+                                                  (mod (dec (:cooldown-remaining weapon-component))
+                                                       (:cooldown weapon-component))))))
+                      world))
 
 
 ;; projectile system

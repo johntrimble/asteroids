@@ -34,7 +34,8 @@
                                     get-rotation
                                     get-aabb
                                     get-mass
-                                    dissoc-entity]]
+                                    dissoc-entity
+                                    assoc-components]]
             [asteroids.math :as math]))
 
 (defn impulse [j]
@@ -67,71 +68,6 @@
 (defn half-weld-joint
   ([a-id b-id]
    {:name :half-weld-joint, :a-id a-id, :b-id b-id}))
-
-(defn update-acceleration [entity]
-  entity)
-
-(defn update-velocity [entity]
-  (if (get-component entity :velocity)
-    (let [acc (or (get-acceleration entity)
-                  [0 0])
-          v (get-velocity entity)
-          m (or (:magnitude (get-component entity
-                                           :max-velocity))
-                math/infinity)
-          m (max (if v
-                   (vector/length v)
-                   0)
-                 m)
-          nv (vector/add v acc)
-          nv (if (> (vector/length nv) m)
-               (vector/scale m
-                             (vector/normalize nv))
-               nv)]
-      (assoc-component entity
-                       (velocity nv)))
-    entity))
-
-(defn update-position [entity]
-  (let [velocity (or (get-velocity entity)
-                     [0 0])
-        current-pos (get-position entity)
-        new-pos (vector/add velocity current-pos)
-        new-pos [(mod (nth new-pos 0) 800)
-                 (mod (nth new-pos 1) 800)]]
-    (assoc-component entity (position new-pos))))
-
-(defn update-angular-acceleration [entity]
-  entity)
-
-;; TODO: This looks almost identical to update-velocity... perhaps there
-;; should be a little code reuse here.
-(defn update-angular-velocity [entity]
-  (if (get-component entity :angular-velocity)
-    (let [acc (or (get-angular-acceleration entity)
-                  0)
-          v (get-angular-velocity entity)
-          m (or (:magnitude (get-component entity
-                                           :max-angular-velocity))
-                math/infinity)
-          nv (+ v acc)
-          s (math/abs nv)
-          nv (if (> s m)
-               (* (/ nv s) m)
-               nv)]
-      (assoc-component entity
-                       (angular-velocity nv)))
-    entity))
-
-(defn update-rotation [entity]
-  (if (get-component entity :rotation)
-    (let [v (or (get-angular-velocity entity)
-                0)
-          current-rotation (get-rotation entity)
-          new-rotation (+ v current-rotation)]
-      (assoc-component entity (rotation new-rotation)))
-    entity))
-
 
 (defn midpoint [[x1 y1] [x2 y2]]
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
@@ -357,7 +293,7 @@
 
 (defn resolve-collisions [world manifolds]
   (->> manifolds
-       (mapcat (partial resolve-collision world))
+       (mapcat #(resolve-collision world %))
        (assoc-entities world)))
 
 ;; NOTE: This does not handle collisions involving more than 2 objects well.
@@ -380,19 +316,6 @@
         collisions (find-collisions world box-collisions)]
     (handle-collisions world collisions)))
 
-(defn update-physics [world]
-  (assoc world
-    :entities
-    (into {} (for [[id e] (:entities world)]
-               [id (-> e
-                       update-acceleration
-                       update-angular-acceleration
-                       update-velocity
-                       update-angular-velocity
-                       update-position
-                       update-rotation
-                       update-aabb)]))))
-
 (defn clear-collisions [world]
   (->> world
        (get-entities)
@@ -400,9 +323,49 @@
        (map #(assoc-component % (collidable)))
        (assoc-entities world)))
 
+(defn update-physics [world e]
+  (let [pos (get-position e)
+        acc (get-acceleration e)
+        vel (or (get-velocity e) [0 0])
+        max-vel (or (:magnitude (get-component entity
+                                               :max-velocity))
+                    math/infinity)
+        max-vel (max (if vel (vector/length vel) 0)
+                     max-vel)
+        ang-acc (or (get-angular-acceleration e)
+                    0)
+        ang-vel (get-angular-velocity e)
+        ang-max-vel (or (:magnitude (get-component entity :max-angular-velocity))
+                        math/infinity)
+        rot (get-rotation e)
+        new-vel (vector/add vel acc)
+        new-vel (if (> (vector/length new-vel) max-vel)
+                  (vector/scale max-vel (vector/normalize new-vel))
+                  new-vel)
+        new-ang-vel (+ ang-vel ang-acc)
+        ang-speed (math/abs new-ang-vel)
+        new-ang-vel (if (> ang-speed ang-max-vel)
+                      (* (/ new-ang-vel ang-speed) ang-max-vel)
+                      new-ang-vel)
+        new-pos (vector/add new-vel pos)
+        new-pos [(mod (nth new-pos 0) 800)
+                 (mod (nth new-pos 1) 800)]
+        new-rot (+ new-ang-vel rot)]
+    (update-aabb (assoc-components e
+                                   [(velocity new-vel)
+                                    (angular-velocity new-ang-vel)
+                                    (position new-pos)
+                                    (rotation new-rot)]))))
+
 (defn physics-system [world]
-  (-> world
-      (update-physics)))
+  (loop [entities (:entities world)
+         output (transient (:entities world))]
+    (if (seq entities)
+      (let [entity-entry (first entities)
+            entity (update-physics world (second entity-entry))
+            id (first entity-entry)]
+        (recur (next entities) (assoc! output id entity)))
+      (assoc world :entities (persistent! output)))))
 
 (defn collision-detection-system [world]
   (let [pairs (find-aabb-collisions world)

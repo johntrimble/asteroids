@@ -1,7 +1,8 @@
 (ns asteroids.intents
   (:require [asteroids.core :as core]
             [asteroids.vector :as vector]
-            [asteroids.math :as math]))
+            [asteroids.math :as math])
+  (:require-macros [asteroids.core :refer [transform-entities]]))
 
 (defn thrust-intent []
   {:name :thrust-intent})
@@ -24,16 +25,17 @@
                   :space fire-intent})
 
 (defn intent-system [world]
-  (let [pressed (:active-keys world)
-        player (first (->> world
-                           core/get-entities
-                           (filter #(core/has-component? % :player))))]
-    (core/assoc-entity world
-                       (->> pressed
-                            (map key->intent)
-                            (filter identity)
-                            (map #(%))
-                            (reduce core/assoc-component player)))))
+  (transform-entities {:components [:player]}
+                      (fn [world entity]
+                        (reduce #(if %2
+                                   (core/assoc-component %1 %2)
+                                   %1)
+                                entity
+                                (for [k (:active-keys world)]
+                                  (let [intent (get key->intent k)]
+                                    (when intent
+                                      (intent))))))
+                      world))
 
 ;; thrust system
 (defn apply-thrust [e]
@@ -89,4 +91,3 @@
                     (core/has-component? % :rotate-right-intent)))
        (map update-rotation)
        (core/assoc-entities world)))
-
