@@ -28,8 +28,12 @@
         h (* 0.5 (* math/pi (* r r)))
         ast (core/entity (core/position [x y])
                          (core/rotation (:rotation props))
-                         (core/velocity (:velocity props))
-                         (core/angular-velocity (:angular-velocity props))
+                         (core/movement [0 0]
+                                        (:velocity props)
+                                        math/infinity
+                                        0
+                                        (:angular-velocity props)
+                                        math/infinity)
                          (core/mass mass)
                          (asteroid-explosive-death)
                          (physics/moment-inertia (* 0.25 math/pi (math/pow r 4)))

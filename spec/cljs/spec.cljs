@@ -16,7 +16,8 @@
             [asteroids.keyboard :as keyboard]
             [asteroids.health :as health]
             [asteroids.jsutil :refer [make-js-map]]
-            [asteroids.asteroids :as asteroids]))
+            [asteroids.asteroids :as asteroids]
+            [asteroids.math :as math]))
 
 (defn setofy [collisions]
   (->> collisions
@@ -72,8 +73,12 @@
                                   collisions)
                   (should= 3 (count collisions))))))
 
-(let [a (core/entity (core/velocity [2 1])
-                     (core/acceleration [1 0.5])
+(let [a (core/entity (core/movement [1 0.5]
+                                    [2 1]
+                                    math/infinity
+                                    0
+                                    0
+                                    math/infinity)
                      (core/position [5 5])
                      (core/aabb [4 4] [6 6]))
       world (core/assoc-entity {} a)
@@ -87,6 +92,11 @@
                 (should-not= [7 6] (core/get-position a-new)))
             (it "should update the position"
                 (should= [8 6.5] (core/get-position a-new)))
+            (it "should provide a valid value for rotation"
+                (should-not (js/isNaN (core/get-rotation a-new))))
+            (it "should provide a valid value for angular components"
+                (should-not (js/isNaN (core/get-angular-velocity a-new)))
+                (should-not (js/isNaN (core/get-angular-acceleration a-new))))
             #_(it "should update the aabb"
                 (should= [[7 5.5] [9 7.5]] (core/get-aabb a)))))
 

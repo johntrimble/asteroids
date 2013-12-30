@@ -5,14 +5,10 @@
             [asteroids.math :refer [uuid]]))
 
 (defrecord Position [name vector])
-(defrecord Acceleration [name vector])
-(defrecord Velocity [name vector])
-(defrecord MaxVelocity [name magnitude])
 (defrecord Rotation [name angle])
-(defrecord AngularAcceleration [name angle])
-(defrecord AngularVelocity [name angle])
-(defrecord MaxAngularVelocity [name magnitude])
 
+;; Velocity and acceleration properties are grouped together in a single
+;; component for performance reasons.
 (defrecord Movement [name
                      acceleration
                      velocity
@@ -21,30 +17,14 @@
                      angular-velocity
                      max-angular-velocity])
 
+;; (defrecord AABB [name xmin ymin xmax ymax])
+
 ;; basic components
+(defn movement [acc vel max-vel ang-acc ang-vel max-ang-vel]
+  (Movement. :movement acc vel max-vel ang-acc ang-vel max-ang-vel))
+
 (defn position [p]
   (Position. :position p))
-
-(defn acceleration [a]
-  (Acceleration. :acceleration a))
-
-(defn velocity [v]
-  (Velocity. :velocity v))
-
-(defn max-velocity [magnitude]
-  (MaxVelocity. :max-velocity magnitude))
-
-(defn rotation [theta]
-  (Rotation. :rotation theta))
-
-(defn angular-acceleration [theta]
-  (AngularAcceleration. :angular-acceleration theta))
-
-(defn angular-velocity [theta]
-  (AngularVelocity. :angular-velocity theta))
-
-(defn max-angular-velocity [theta]
-  (MaxAngularVelocity. :max-angular-velocity theta))
 
 (defn ttl
   ([duration] (ttl duration duration))
@@ -132,16 +112,12 @@
   (-> entity (get-component :identifier) :id))
 
 (defn get-velocity [entity]
-  (let [c (get-component entity :velocity)]
-    (if c
-      (.-vector c)
-      [0 0])))
+  (let [c (get-component entity :movement)]
+    (.-velocity c)))
 
 (defn get-acceleration [entity]
-  (let [c (get-component entity :acceleration)]
-    (if c
-      (.-vector c)
-      [0 0])))
+  (let [c (get-component entity :movement)]
+    (.-vector c)))
 
 (defn get-position [entity]
   (let [c (get-component entity :position)]
@@ -149,15 +125,12 @@
       (.-vector c))))
 
 (defn get-angular-velocity [entity]
-  (let [c (get-component entity :agnular-velocity)]
-    (if c
-      (.-angle c)
-      0)))
+  (let [c (get-component entity :movement)]
+    (.-angular_velocity c)))
 
 (defn get-angular-acceleration [entity]
-  (let [c (get-component entity :angular-acceleration)]
-    (when c
-      (.-angle c))))
+  (let [c (get-component entity :movement)]
+    (.-angular_acceleration c)))
 
 (defn get-rotation [entity]
   (-> entity (get-component :rotation) :angle))

@@ -4,7 +4,8 @@
             [asteroids.physics :as physics]
             [asteroids.graphics :as graphics]
             [asteroids.intents :as intents]
-            [asteroids.health :as health])
+            [asteroids.health :as health]
+            [asteroids.math :as math])
   (:require-macros [asteroids.core :refer [transform-entities]]))
 
 (def projectile-color 0x00FF00)
@@ -31,8 +32,13 @@
     (core/entity (core/position [x y])
                  (projectile)
                  (physics/collidable)
+                 (core/movement [0 0]
+                                (vector/add v (core/get-velocity e))
+                                math/infinity
+                                0
+                                0
+                                math/infinity)
                  (core/ttl 60)
-                 (core/velocity (vector/add v (core/get-velocity e)))
                  (core/aabb [(- x r) (- y r)]
                             [(+ x r) (+ y r)])
                  (graphics/display-object (doto (js/PIXI.Graphics.)

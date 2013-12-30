@@ -4,6 +4,7 @@
             [asteroids.vector :as vector]
             ;; NOTE: ClojureScript doesn't support :refer :all *sadface*
             [asteroids.core :refer [position
+                                    movement
                                     acceleration
                                     velocity
                                     max-velocity
@@ -64,10 +65,6 @@
   ([] (collidable []))
   ([entity-ids]
    {:name :collidable, :entity-ids entity-ids}))
-
-(defn half-weld-joint
-  ([a-id b-id]
-   {:name :half-weld-joint, :a-id a-id, :b-id b-id}))
 
 (defn midpoint [[x1 y1] [x2 y2]]
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
@@ -253,6 +250,8 @@
         []
         ;; objects are moving towards each other, resolve collision
         (let [penetration (:penetration contact)
+              mov-a (get-component a :movement)
+              mov-b (get-component b :movement)
               mass-a (get-mass a)
               mass-b (get-mass b)
               moment-inertia-a (get-moment-of-inertia a)
@@ -269,24 +268,32 @@
                             (/ 1 mass-b)
                             (/ (* ra ra) moment-inertia-a)
                             (/ (* rb rb) moment-inertia-b)))
-              new-va (vector/sub (get-velocity a)
+              new-va (vector/sub (.-velocity mov-a)
                                  (vector/scale (/ impulse mass-a)
                                                normal))
-              new-vb (vector/add (get-velocity b)
+              new-vb (vector/add (.-velocity mov-b)
                                  (vector/scale (/ impulse mass-b)
                                                normal))
-              new-wa (+ (get-angular-velocity a) (/ (* ra impulse)
-                                                    moment-inertia-a))
-              new-wb (- (get-angular-velocity b) (/ (* rb impulse)
-                                                    moment-inertia-b))
+              new-wa (+ (.-angular-velocity mov-a) (/ (* ra impulse)
+                                                      moment-inertia-a))
+              new-wb (- (.-angular-velocity mov-b) (/ (* rb impulse)
+                                                      moment-inertia-b))
               pos-correction (vector/scale (* 0.5 penetration)
                                            normal)]
           (correct-positions (-> a
-                                 (assoc-component (velocity new-va))
-                                 (assoc-component (angular-velocity new-wa)))
+                                 (assoc-component (movement (.-acceleration mov-a)
+                                                            new-va
+                                                            (.-max_velocity mov-a)
+                                                            (.-angular_acceleration mov-a)
+                                                            new-wa
+                                                            (.-max_angular_velocity mov-a))))
                              (-> b
-                                 (assoc-component (velocity new-vb))
-                                 (assoc-component (angular-velocity new-wb)))
+                                 (assoc-component (movement (.-acceleration mov-b)
+                                                            new-vb
+                                                            (.-max_velocity mov-b)
+                                                            (.-angular_acceleration mov-b)
+                                                            new-wb
+                                                            (.-max_angular_velocity mov-b))))
                              normal
                              penetration))))
     []))
@@ -324,19 +331,16 @@
        (assoc-entities world)))
 
 (defn update-physics [world e]
-  (let [pos (get-position e)
-        acc (get-acceleration e)
-        vel (or (get-velocity e) [0 0])
-        max-vel (or (:magnitude (get-component entity
-                                               :max-velocity))
-                    math/infinity)
+  (let [mov (get-component e :movement)
+        pos (get-position e)
+        acc (.-acceleration mov)
+        vel (.-velocity mov)
+        max-vel (.-max_velocity mov)
         max-vel (max (if vel (vector/length vel) 0)
                      max-vel)
-        ang-acc (or (get-angular-acceleration e)
-                    0)
-        ang-vel (get-angular-velocity e)
-        ang-max-vel (or (:magnitude (get-component entity :max-angular-velocity))
-                        math/infinity)
+        ang-acc (.-angular_acceleration mov)
+        ang-vel (.-angular_velocity mov)
+        ang-max-vel (.-max_angular_velocity mov)
         rot (get-rotation e)
         new-vel (vector/add vel acc)
         new-vel (if (> (vector/length new-vel) max-vel)
@@ -352,8 +356,8 @@
                  (mod (nth new-pos 1) 800)]
         new-rot (+ new-ang-vel rot)]
     (update-aabb (assoc-components e
-                                   [(velocity new-vel)
-                                    (angular-velocity new-ang-vel)
+                                   [(movement acc new-vel (.-max_velocity mov)
+                                              ang-acc new-ang-vel (.-max_angular_velocity mov))
                                     (position new-pos)
                                     (rotation new-rot)]))))
 

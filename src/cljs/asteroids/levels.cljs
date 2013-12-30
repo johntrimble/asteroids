@@ -36,15 +36,18 @@
 
 (defn spawn-ship [world]
   (let [ship (core/entity (core/position [400 400])
-                          (core/velocity [0 0])
-                          (core/acceleration [0 0])
+                          (core/movement [0 0]
+                                         [0 0]
+                                         10
+                                         0
+                                         0
+                                         math/infinity)
                           (core/rotation 0)
                           (physics/collidable)
                           (health/health 10000)
                           (core/player)
                           (core/aabb [390 390] [410 410])
                           (core/mass (* math/pi (* 10 10)))
-                          (core/max-velocity 10)
                           (projectile/weapon 10)
                           (physics/moment-inertia (* 0.25 math/pi (math/pow 10 4)))
                           (graphics/display-object (doto (js/PIXI.Graphics.)

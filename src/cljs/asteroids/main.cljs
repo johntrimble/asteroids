@@ -44,7 +44,12 @@
   (core/assoc-entity {}
                 (core/entity (core/position [20 20])
                         (core/mass (* math/pi 20 20))
-                        (core/velocity [5 5])
+                        (core/movement [0 0]
+                                       [5 5]
+                                       math/infinity
+                                       0
+                                       0
+                                       math/infinity)
                         (graphics/display-object (doto (js/PIXI.Graphics.)
                                                    (.beginFill 0xFF3300)
                                                    (.drawCircle 0 0 5)

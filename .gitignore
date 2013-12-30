@@ -6,3 +6,4 @@ bower_components
 private
 pom.xml
 *~
+.DS_Store

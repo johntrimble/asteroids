@@ -39,7 +39,8 @@
 
 ;; thrust system
 (defn apply-thrust [e]
-  (let [rotation (or (core/get-rotation e) 0)
+  (let [mov (core/get-component e :movement)
+        rotation (or (core/get-rotation e) 0)
         direction (vector/rotate rotation [1 0])
         intent-vec (if (core/has-component? e :thrust-intent)
                      (vector/scale 0.05 direction)
@@ -47,11 +48,16 @@
         thrust-vec (-> e
                        (core/get-component :thrust)
                        (:vector [0 0]))
-        acc (or (core/get-acceleration e) [0 0])
+        acc (.-acceleration mov)
         nacc (vector/add acc (vector/sub intent-vec thrust-vec))]
     (-> e
         (dissoc :thrust-intent)
-        (core/assoc-component (core/acceleration nacc))
+        (core/assoc-component (core/movement nacc
+                                             (.-velocity mov)
+                                             (.-max_velocity mov)
+                                             (.-angular_acceleration mov)
+                                             (.-angular_velocity mov)
+                                             (.-max_angular_velocity mov)))
         (core/assoc-component (thrust intent-vec)))))
 
 (defn thrust-system
