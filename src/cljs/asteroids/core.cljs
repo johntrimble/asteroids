@@ -17,7 +17,7 @@
                      angular-velocity
                      max-angular-velocity])
 
-;; (defrecord AABB [name xmin ymin xmax ymax])
+(defrecord AABB [name xmin ymin xmax ymax])
 
 ;; basic components
 (defn movement [acc vel max-vel ang-acc ang-vel max-ang-vel]
@@ -25,6 +25,9 @@
 
 (defn position [p]
   (Position. :position p))
+
+(defn rotation [theta]
+  (Rotation. :rotation theta))
 
 (defn ttl
   ([duration] (ttl duration duration))
@@ -34,12 +37,18 @@
 ;; TODO: This is nice when sweeping across the world looking for intersecting
 ;; AABBs, but wouldn't it make more sense to define this using the body's
 ;; coordinate space for an anchor and then a length and width?
-(defn aabb
+#_(defn aabb
   "Defines an AABB in terms of world coordinates using the coordinate with
   minium values for x and y (pmin) and the coordinate with maximum values for
   x and y (pmax)."
   [pmin pmax]
   (array-map :name :aabb, :vector [pmin pmax]))
+
+(defn aabb
+  ([xmin ymin xmax ymax]
+   (AABB. :aabb xmin ymin xmax ymax))
+  ([[xmin ymin] [xmax ymax]]
+   (aabb xmin ymin xmax ymax)))
 
 (defn mass [m]
   (array-map :name :mass, :mass m))
@@ -136,7 +145,7 @@
   (-> entity (get-component :rotation) :angle))
 
 (defn get-aabb [entity]
-  (-> entity (get-component :aabb) :vector))
+  (get-component entity :aabb))
 
 (defn get-mass [entity]
   (-> entity (get-component :mass) :mass))

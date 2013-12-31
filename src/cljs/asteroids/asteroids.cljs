@@ -59,7 +59,7 @@
        (recur (- n p) (- partition-count 1) (conj acc p))))))
 
 (defn do-explosive-death [world entity]
-  (let [[[xmin ymin] [xmax ymax]] (core/get-aabb entity)
+  (let [aabb-comp (core/get-component entity :aabb)
         mass (core/get-mass entity)
         lost-mass (* 0 mass) ; no mass lost
         mass (- mass lost-mass)
@@ -67,8 +67,8 @@
         child-masses (partition-number mass c)
         [x y] (core/get-position entity)
         child-positions (for [i (range c)]
-                          [(rand-nth (range xmin xmax))
-                           (rand-nth (range ymin ymax))])
+                          [(rand-nth (range (.-xmin aabb-comp) (.-xmax aabb-comp)))
+                           (rand-nth (range (.-ymin aabb-comp) (.-ymax aabb-comp)))])
         child-velocities (map #(physics/get-vel-point entity %)
                               child-positions)
         asteroids (map (fn [p v m]

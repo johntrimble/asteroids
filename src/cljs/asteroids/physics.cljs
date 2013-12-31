@@ -70,16 +70,21 @@
   [(/ (+ x1 x2) 2) (/ (+ y1 y2) 2)])
 
 (defn update-aabb [entity]
-  (if (get-component entity :aabb)
-    (let [pos (get-position entity)
-          [pmin pmax] (-> entity (get-component :aabb) :vector)
-          mid (midpoint pmin pmax)
-          delta (vector/sub pos mid)
-          pmin (vector/add pmin delta)
-          pmax (vector/add pmax delta)]
+  (if-let [aabb-comp (get-component entity :aabb)]
+    (let [[x y] (get-position entity)
+          xmin (.-xmin aabb-comp)
+          ymin (.-ymin aabb-comp)
+          xmax (.-xmax aabb-comp)
+          ymax (.-ymax aabb-comp)
+          deltax (- x (/ (+ xmin xmax) 2))
+          deltay (- y (/ (+ ymin ymax) 2))
+          nxmin (+ xmin deltax)
+          nxmax (+ xmax deltax)
+          nymin (+ ymin deltay)
+          nymax (+ ymax deltay)]
       (assoc-component entity
-                       (aabb pmin pmax)))
-  entity))
+                       (aabb nxmin nymin nxmax nymax)))
+    entity))
 
 (defn boxes-overlap? [[[xmin1 ymin1] [xmax1 ymax1]]
                       [[xmin2 ymin2] [xmax2 ymax2]]]
@@ -142,14 +147,9 @@
                    (filter #(has-components? % :aabb :collidable))
                    (map (fn [e]
                           (let [id (get-id e)
-                                [[xmin ymin] [xmax ymax]] (:vector (get-component e :aabb))
-                                obj (js-obj)]
-                            (aset obj "xmin" xmin)
-                            (aset obj "ymin" ymin)
-                            (aset obj "xmax" xmax)
-                            (aset obj "ymax" ymax)
-                            (aset obj "id" id)
-                            obj)))
+                                aabb-comp (get-component e :aabb)]
+                            (aset aabb-comp "id" id)
+                            aabb-comp)))
                    (to-array))
         aabbs-min aabbs
         aabbs-max (.slice aabbs 0)
@@ -164,7 +164,7 @@
 (defn find-collisions [world pairs]
   (let [to-circle (fn [entity]
                     (let [box (get-aabb entity)
-                          [[xmin ymin] [xmax ymax]] box
+                          xmax (.-xmax box)
                           [x y] (get-position entity)
                           r (math/abs (- xmax x))]
                       (assert (not (< r 0)) "The circle radius cannot be negative.")
@@ -181,8 +181,8 @@
 (defn calc-collision-manifold [world entity1 entity2]
   (let [pos1 (get-position entity1)
         pos2 (get-position entity2)
-        [[xmin1 _] [xmax1 _]] (get-aabb entity1)
-        [[xmin2 _] [xmax2 _]] (get-aabb entity2)
+        xmax1 (.-xmax (get-aabb entity1))
+        xmax2 (.-xmax (get-aabb entity2))
         trans (vector/sub pos2 pos1)
         ;; TODO: there is not currently support for different shapes for rigid
         ;; bodies, so everything is just assumed to be a circle inscribed

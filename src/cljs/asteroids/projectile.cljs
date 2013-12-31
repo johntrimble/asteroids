@@ -23,7 +23,9 @@
 (defn create-projectile [e]
   (let [r 2
         rotation (core/get-rotation e)
-        [[xmin _][xmax _]] (core/get-aabb e)
+        aabb-comp (core/get-aabb e)
+        xmin (.-xmin aabb-comp)
+        xmax (.-xmax aabb-comp)
         rotation-vector (vector/rotate rotation [1 0])
         [x y] (vector/add (core/get-position e)
                           (vector/scale (- xmax xmin)
