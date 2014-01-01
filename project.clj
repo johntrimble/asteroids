@@ -26,29 +26,37 @@
                        "resources/private/js/asteroids_spec.js"]}
 
               :builds
-              [{:id "main"
-                :crossover-jar true
-                :source-paths ["src/cljs"]
+              {:dev
+               {:crossover-jar true
+                 :source-paths ["src/cljs"]
+                 :compiler {:output-to "resources/public/js/asteroids.js"
+                            :source-map "resources/public/js/asteroids.js.map"
+                            :optimizations :simple
+                            :pretty-print true}
+                 :jar true}
+               :prod
+               {:source-paths ["src/cljs"]
                 :compiler {:output-to "resources/public/js/asteroids.js"
                            :source-map "resources/public/js/asteroids.js.map"
-                           :optimizations :simple
-                           :pretty-print true}
-                :jar true}
-               {:source-paths ["src/cljs", "test/clj" "test/cljs-performance"]
-                :notify-command ["phantomjs"
-                                 "phantom/performance.js"
-                                 "resources/private/js/performance.js"]
-                :compiler {:output-to "resources/private/js/performance.js",
-                           :source-map "resources/private/js/performance.js.map"
-                           :optimizations :simple
-                           :pretty-print true}}
-               {:source-paths ["src/cljs" "spec/cljs"]
-                :notify-command ["phantomjs"
-                                 "phantom/specljs_runner.js"
-                                 "resources/public/bower_components/pixi/bin/pixi.js"
-                                 "resources/private/js/asteroids_spec.js"]
-                :compiler {:output-to "resources/private/js/asteroids_spec.js"
-                           :source-map "resources/private/js/asteroids_spec.js.map"
-                           :optimizations :simple
-                           :pretty-print true}}]}
+                           :optimizations :advanced
+                           :externs ["resources/public/bower_components/pixi/bin/pixi.js"]}}
+               :profile
+                {:source-paths ["src/cljs", "test/clj" "test/cljs-performance"]
+                 :notify-command ["phantomjs"
+                                  "phantom/performance.js"
+                                  "resources/private/js/performance.js"]
+                 :compiler {:output-to "resources/private/js/performance.js",
+                            :source-map "resources/private/js/performance.js.map"
+                            :optimizations :simple
+                            :pretty-print true}}
+               :test
+                {:source-paths ["src/cljs" "spec/cljs"]
+                 :notify-command ["phantomjs"
+                                  "phantom/specljs_runner.js"
+                                  "resources/public/bower_components/pixi/bin/pixi.js"
+                                  "resources/private/js/asteroids_spec.js"]
+                 :compiler {:output-to "resources/private/js/asteroids_spec.js"
+                            :source-map "resources/private/js/asteroids_spec.js.map"
+                            :optimizations :simple
+                            :pretty-print true}}}}
   :ring {:handler asteroids.util.server/app})
