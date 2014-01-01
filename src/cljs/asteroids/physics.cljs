@@ -398,9 +398,12 @@
          output (transient (:entities world))]
     (if (seq entities)
       (let [entity-entry (first entities)
-            entity (update-physics world (second entity-entry))
-            id (first entity-entry)]
-        (recur (next entities) (assoc! output id entity)))
+            entity (second entity-entry)]
+        (if (has-component? entity :movement)
+          (let [entity (update-physics world entity)
+                id (first entity-entry)]
+            (recur (next entities) (assoc! output id entity)))
+          (recur (next entities) output)))
       (assoc world :entities (persistent! output)))))
 
 (defn collision-detection-system [world]
@@ -425,13 +428,12 @@
 
 (defn update-with-impulse [old-world world]
   (let [has-mass-velocity? #(and (has-component? % :mass)
-                                 (has-component? % :velocity))]
+                                 (has-component? % :movement))]
     (->> world
          get-entities
          (map #(vector % (get-entity old-world (get-id %))))
          (filter #(second %))
          (filter #(every? has-mass-velocity? %))
-
          (map (fn [[ne e]]
                 (assoc-component ne
                                  (impulse (math/abs (* (get-mass ne) ; assume mass didn't change
