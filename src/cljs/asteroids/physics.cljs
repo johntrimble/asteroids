@@ -105,16 +105,48 @@
          [a b]
          [b a]))
 
-(defn- find-collisions-along-axis
-  "Finds collisions along an axis where min-field and max-field are the
-  property names of the minimum and maximum coordinates along the axis. The
-  mins-array and maxes-array are arrays of objects having the fields
-  corresponding to the values of min-field and max-field, as well as an
-  arbitrary id property (though it must be comparable). The arrays do not need
-  to be sorted, and might be reordered by this function."
-  [min-field max-field mins-array maxes-array]
-  (let [aabbs-min (.sort mins-array #(- (aget %1 min-field) (aget %2 min-field)))
-        aabbs-max (.sort maxes-array #(- (aget %1 max-field) (aget %2 max-field)))
+
+;; These were anonymous functions, but they were not being optimized properly
+(defn- delta-xmin [a b] (- (.-xmin a) (.-xmin b)))
+(defn- delta-xmax [a b] (- (.-xmax a) (.-xmax b)))
+(defn- delta-ymin [a b] (- (.-ymin a) (.-ymin b)))
+(defn- delta-ymax [a b] (- (.-ymax a) (.-ymax b)))
+
+;; TODO: Consolidate find-collisions-along-x-axis and find-collisions-along-y-axis
+;; macro maybe?
+(defn- find-collisions-along-x-axis
+  [mins-array maxes-array]
+  (let [aabbs-min (.sort mins-array delta-xmin)
+        aabbs-max (.sort maxes-array delta-xmax)
+        size (count aabbs-max)]
+    (loop [i 0, j 0, active #{}, collisions (transient #{})]
+      (if (and (< i size) (< j size))
+        (let [a (aget aabbs-min i)
+              b (aget aabbs-max j)
+              a-id (aget a "id")
+              b-id (aget b "id")]
+          (cond
+           ;; case 1: an aabb has become active
+           (< (.-xmin a) (.-xmax b))
+           (recur (inc i)
+                  j
+                  (conj active a-id)
+                  (reduce #(conj! %1 (pair %2 a-id))
+                          collisions
+                          active))
+
+           ;; case 2: an aabb has become inactive
+           :default
+           (recur i
+                  (inc j)
+                  (disj active b-id)
+                  collisions)))
+        (persistent! collisions)))))
+
+(defn- find-collisions-along-y-axis
+  [mins-array maxes-array]
+  (let [aabbs-min (.sort mins-array delta-ymin)
+        aabbs-max (.sort maxes-array delta-ymax)
         size (count aabbs-max )]
     (loop [i 0, j 0, active #{}, collisions (transient #{})]
       (if (and (< i size) (< j size))
@@ -124,7 +156,7 @@
               b-id (aget b "id")]
           (cond
            ;; case 1: an aabb has become active
-           (< (aget a min-field) (aget b max-field))
+           (< (.-ymin a) (.-ymax b))
            (recur (inc i)
                   j
                   (conj active a-id)
@@ -153,12 +185,12 @@
                    (to-array))
         aabbs-min aabbs
         aabbs-max (.slice aabbs 0)
-        x-collided (find-collisions-along-axis "xmin" "xmax" aabbs-min aabbs-max)
-        y-collided (find-collisions-along-axis "ymin" "ymax" aabbs-min aabbs-max)]
+        x-collided (find-collisions-along-x-axis aabbs-min aabbs-max)
+        y-collided (find-collisions-along-y-axis aabbs-min aabbs-max)]
     (seq (set/intersection x-collided
                            y-collided))))
 
-(defn circles-collide? [c1 r1 c2 r2]
+(defn ^boolean circles-collide? [c1 r1 c2 r2]
   (> (+ r1 r2) (vector/length (vector/sub c1 c2))))
 
 (defn find-collisions [world pairs]
