@@ -68,10 +68,10 @@
 
 ;; utility functions for components
 
-(defn has-component? [entity name]
-  (get entity name))
+(defn ^boolean has-component? [entity name]
+  (contains? entity name))
 
-(defn has-components?
+(defn ^boolean  has-components?
   ([entity name]
    (has-component? entity name))
   ([entity name1 name2]
