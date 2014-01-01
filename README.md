@@ -1,6 +1,9 @@
 # Asteroids
 This is a simple asteroids-esque game for experimenting with using the Entity Component System in ClojureScript. This is still a work in progress.
 
+## Demo
+You can see the game in action at [http://johntrimble.github.io/asteroids/](http://johntrimble.github.io/asteroids/).
+
 ## Requirements
 - bower (>=1.2.4)
 - leiningen (>=2.3.2)
