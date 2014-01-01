@@ -7,3 +7,5 @@ private
 pom.xml
 *~
 .DS_Store
+resources/public/js/asteroids.js.map
+resources/public/js/asteroids.js
