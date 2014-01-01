@@ -24,6 +24,26 @@
        (map #(into #{} %))
        (into #{})))
 
+(let [a (-> (core/entity)
+            (core/assoc-components
+             [{:name :a}
+              {:name :b}
+              {:name :c}
+              {:name :d}]))]
+  (describe "has-components?"
+            (it "should handle checking for 1 component"
+                (should (core/has-components? a :a))
+                (should-not (core/has-components? a :z)))
+            (it "should handle checking for 2 components"
+                (should (core/has-components? a :a :b))
+                (should-not (core/has-components? a :a :z)))
+            (it "should handle checking for 3 components"
+                (should (core/has-components? a :a :b :c))
+                (should-not (core/has-components? a :a :b :z)))
+            (it "should handle checking for n components"
+                (should (core/has-components? a :a :b :c :d))
+                (should-not (core/has-components? a :a :b :c :d :z)))))
+
 (let [a (core/entity (core/aabb [0 0] [6 6])
                      (physics/collidable))
       b (core/entity (core/aabb [1 1] [3 3])

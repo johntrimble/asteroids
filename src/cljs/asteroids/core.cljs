@@ -77,9 +77,13 @@
   ([entity name1 name2]
    (and (has-component? entity name1)
         (has-component? entity name2)))
-  ([entity name1 name2 & more]
-   (and (has-components? entity name1 name2)
-        (->> (concat [name] more)
+  ([entity name1 name2 name3]
+   (and (has-component? entity name1)
+        (has-component? entity name2)
+        (has-component? entity name3)))
+  ([entity name1 name2 name3 & more]
+   (and (has-components? entity name1 name2 name3)
+        (->> more
              (map has-component? (repeat entity))
              (reduce #(and %1 %2))))))
 
