@@ -55,7 +55,15 @@
                                                      (.moveTo 10 0)
                                                      (.lineTo -6 -6)
                                                      (.lineTo -6 6)
-                                                     (.endFill))))]
-    (core/assoc-entity world ship)))
+                                                     (.endFill))))
+        player-health-bar (core/entity (core/position [10 770])
+                                       (graphics/display-object (js/PIXI.Graphics.))
+                                       (graphics/layer 2)
+                                       (health/health-bar (core/get-id ship)
+                                                          780
+                                                          20))]
+    (-> world
+        (core/assoc-entity ship)
+        (core/assoc-entity player-health-bar))))
 
 

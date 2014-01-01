@@ -84,8 +84,10 @@
         world (physics/collision-detection-system world)
         world (projectile/projectile-collision-resolution-system world)
         world (physics/collision-physics-system world)
+        world (health/impulse-damage-system world)
         world (health/damage-resolution-system world)
         world (asteroids/asteroid-death-system world)
+        world (health/health-bar-system world)
         world (core/ttl-system world)]
     world))
 
