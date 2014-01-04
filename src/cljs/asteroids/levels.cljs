@@ -27,15 +27,19 @@
 
 (defn random-asteroid-field
   ([] (random-asteroid-field 15))
-  ([n] (->> (range n)
-            (map (fn [_] (create-rand-asteroid 800 800)))
-            (reduce core/assoc-entity {}))))
+  ([n] (let [world {:geometry {:width 800
+                               :height 500}}]
+         (->> (range n)
+              (map (fn [_] (create-rand-asteroid (core/get-width world) (core/get-height world))))
+              (reduce core/assoc-entity world)))))
 
 (defn empty-world []
   {:entities {}})
 
 (defn spawn-ship [world]
-  (let [ship (core/entity (core/position [400 400])
+  (let [x (/ (core/get-width world) 2)
+        y (/ (core/get-height world) 2)
+        ship (core/entity (core/position [x y])
                           (core/movement [0 0]
                                          [0 0]
                                          10
@@ -46,7 +50,8 @@
                           (physics/collidable)
                           (health/health 10000)
                           (core/player)
-                          (core/aabb [390 390] [410 410])
+                          (core/aabb [(- (core/get-width world) 10) (- (core/get-height world) 10)]
+                                     [(+ (core/get-width world) 10) (+ (core/get-height world) 10)])
                           (core/mass (* math/pi (* 10 10)))
                           (projectile/weapon 10)
                           (physics/moment-inertia (* 0.25 math/pi (math/pow 10 4)))
@@ -56,11 +61,11 @@
                                                      (.lineTo -6 -6)
                                                      (.lineTo -6 6)
                                                      (.endFill))))
-        player-health-bar (core/entity (core/position [10 770])
+        player-health-bar (core/entity (core/position [10 (- (core/get-height world) 30)])
                                        (graphics/display-object (js/PIXI.Graphics.))
                                        (graphics/layer 2)
                                        (health/health-bar (core/get-id ship)
-                                                          780
+                                                          (- (core/get-width world) 20)
                                                           20))]
     (-> world
         (core/assoc-entity ship)

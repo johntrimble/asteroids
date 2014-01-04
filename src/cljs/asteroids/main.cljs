@@ -20,9 +20,17 @@
 
 (set! *print-fn* #(.log js/console %))
 
+(def world (atom {}))
+
+(swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
+
 (def update-world-interval 16)
 
-(def renderer (js/PIXI.autoDetectRenderer 800 800 nil false true))
+(def renderer (js/PIXI.autoDetectRenderer (core/get-width @world)
+                                          (core/get-height @world)
+                                          nil
+                                          false
+                                          true))
 
 (def stage (js/PIXI.Stage. 0x000000))
 
@@ -35,6 +43,39 @@
 
 (def layer-map (add-layers stage))
 
+(defn scale-layers! [layer-map world ratio]
+  (dorun (->> layer-map
+              (map (fn [[k v]]
+                     (let [s (.-scale v)]
+                       (set! (.-x s) ratio)
+                       (set! (.-y s) ratio)))))))
+
+(defn resize! [renderer layer-map world width height]
+  (let [world-width (core/get-width world)
+        world-height (core/get-height world)
+        ratio (/ world-width world-height)
+        screen-ratio (/ width height)
+        ratio-ratio (/ ratio screen-ratio)
+        [new-width new-height] (if (> 1 ratio-ratio)
+                                 [(* height ratio) height]
+                                 [width (/ width ratio)])]
+    (.resize renderer new-width new-height)
+    (scale-layers! layer-map world (/ new-width world-width))))
+
+(defn resize-to-window []
+  (resize! renderer
+           layer-map
+           @world
+           (.-innerWidth js/window)
+           (.-innerHeight js/window)))
+
+(resize-to-window)
+
+(if js/window
+  (dommy/listen! js/window
+                 :resize
+                 resize-to-window))
+
 (def update-stage-system! (graphics/create-update-stage-system))
 
 (dommy/replace-contents! (sel1 :#content)
@@ -42,23 +83,19 @@
 
 (defn generate-world []
   (core/assoc-entity {}
-                (core/entity (core/position [20 20])
-                        (core/mass (* math/pi 20 20))
-                        (core/movement [0 0]
-                                       [5 5]
-                                       math/infinity
-                                       0
-                                       0
-                                       math/infinity)
-                        (graphics/display-object (doto (js/PIXI.Graphics.)
-                                                   (.beginFill 0xFF3300)
-                                                   (.drawCircle 0 0 5)
-                                                   (.endFill)))
-                        (core/aabb [15 15] [25 25]))))
-
-(def world (atom {}))
-
-(swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
+                     (core/entity (core/position [20 20])
+                                  (core/mass (* math/pi 20 20))
+                                  (core/movement [0 0]
+                                                 [5 5]
+                                                 math/infinity
+                                                 0
+                                                 0
+                                                 math/infinity)
+                                  (graphics/display-object (doto (js/PIXI.Graphics.)
+                                                             (.beginFill 0xFF3300)
+                                                             (.drawCircle 0 0 5)
+                                                             (.endFill)))
+                                  (core/aabb [15 15] [25 25]))))
 
 (defn debug-world [world]
   (let [ec (-> world

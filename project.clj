@@ -37,7 +37,6 @@
                :prod
                {:source-paths ["src/cljs"]
                 :compiler {:output-to "resources/public/js/asteroids.js"
-                           :source-map "resources/public/js/asteroids.js.map"
                            :optimizations :advanced
                            :externs ["resources/public/bower_components/pixi/bin/pixi.js"]}}
                :profile

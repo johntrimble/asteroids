@@ -36,7 +36,9 @@
                                     get-aabb
                                     get-mass
                                     dissoc-entity
-                                    assoc-components]]
+                                    assoc-components
+                                    get-width
+                                    get-height]]
             [asteroids.math :as math]))
 
 (defn impulse [j]
@@ -384,8 +386,8 @@
                       (* (/ new-ang-vel ang-speed) ang-max-vel)
                       new-ang-vel)
         new-pos (vector/add new-vel pos)
-        new-pos [(mod (nth new-pos 0) 800)
-                 (mod (nth new-pos 1) 800)]
+        new-pos [(mod (nth new-pos 0) (get-width world))
+                 (mod (nth new-pos 1) (get-height world))]
         new-rot (+ new-ang-vel rot)]
     (update-aabb (assoc-components e
                                    [(movement acc new-vel (.-max_velocity mov)

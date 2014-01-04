@@ -114,6 +114,12 @@
 
 ;; convenience functions for getting basic component properties from entities
 
+(defn get-width [world]
+  (get-in world [:geometry :width] 800))
+
+(defn get-height [world]
+  (get-in world [:geometry :height] 500))
+
 (defn get-id [entity]
   (-> entity (get-component :identifier) :id))
 
