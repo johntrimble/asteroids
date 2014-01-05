@@ -26,60 +26,76 @@
 
 (def update-world-interval 16)
 
-(def renderer (js/PIXI.autoDetectRenderer (core/get-width @world)
-                                          (core/get-height @world)
-                                          nil
-                                          false
-                                          true))
+(defn aspect-fit [aspect-ratio width height]
+  (let [proposed-aspect (/ width height)]
+    (if (> aspect-ratio proposed-aspect)
+      [width (/ width aspect-ratio)]
+      [(* aspect-ratio height) height])))
 
-(def stage (js/PIXI.Stage. 0x000000))
+(defn view [window aspect-ratio sel]
+  (let [renderer (js/PIXI.autoDetectRenderer 1
+                                             1
+                                             nil
+                                             false
+                                             true)
+        stage (js/PIXI.Stage. 0x000000)
+        layers [{:level 0
+                 :name :background-layer
+                 :display-object (PIXI.DisplayObjectContainer.)}
+                {:level 1
+                 :name :main-layer
+                 :display-object (PIXI.DisplayObjectContainer.)}
+                {:level 2
+                 :name :interface-layer
+                 :display-object (PIXI.DisplayObjectContainer.)}]]
+    ;; Add the layers to the stage
+    (dorun (map #(.addChild stage (:display-object %)) layers))
+    ;; Add the view to the DOM
+    (dommy/replace-contents! sel (.-view renderer))
+    {:layers layers
+     :renderer renderer
+     :stage stage
+     :window window
+     :aspect-ratio aspect-ratio}))
 
-(defn add-layers [stage]
-  (into {} (map (fn [i]
-                  (let [cont (PIXI.DisplayObjectContainer.)]
-                    (.addChild stage cont)
-                    [i cont]))
-                (range 3))))
+(defn ^boolean is-size? [renderer width height]
+  (and (== (.-width renderer) width)
+       (== (.-height renderer) height)))
 
-(def layer-map (add-layers stage))
-
-(defn scale-layers! [layer-map world ratio]
-  (dorun (->> layer-map
-              (map (fn [[k v]]
-                     (let [s (.-scale v)]
-                       (set! (.-x s) ratio)
-                       (set! (.-y s) ratio)))))))
-
-(defn resize! [renderer layer-map world width height]
-  (let [world-width (core/get-width world)
-        world-height (core/get-height world)
-        ratio (/ world-width world-height)
-        screen-ratio (/ width height)
-        ratio-ratio (/ ratio screen-ratio)
-        [new-width new-height] (if (> 1 ratio-ratio)
-                                 [(* height ratio) height]
-                                 [width (/ width ratio)])]
-    (.resize renderer new-width new-height)
-    (scale-layers! layer-map world (/ new-width world-width))))
-
-(defn resize-to-window []
-  (resize! renderer
-           layer-map
-           @world
-           (.-innerWidth js/window)
-           (.-innerHeight js/window)))
-
-(resize-to-window)
-
-(if js/window
-  (dommy/listen! js/window
-                 :resize
-                 resize-to-window))
+(def renderer (view js/window
+                    (/ (core/get-width @world)
+                       (core/get-height @world))
+                    (sel1 :#content)))
 
 (def update-stage-system! (graphics/create-update-stage-system))
 
-(dommy/replace-contents! (sel1 :#content)
-                         (.-view renderer))
+(defn render! [{:keys [renderer window aspect-ratio layers stage]} world]
+  (let [[width height] (aspect-fit aspect-ratio
+                                   (.-innerWidth window)
+                                   (.-innerHeight window))]
+
+    ;; update the stage
+    (update-stage-system! world layers)
+
+    ;; resize view if necessary
+    (when-not (is-size? renderer width height)
+      (.log js/console "resizing")
+      (let [[new-width new-height] [width height]]
+        (.resize renderer width height))
+
+      ;; scale the layers appropriately
+      (let [scale-factor (/ width (core/get-width world))]
+        (loop [layers layers]
+          (when (seq layers)
+            (let [{:keys [display-object]} (first layers)
+                  scale-obj (.-scale display-object)]
+              (when-not (== (.-x scale-obj) scale-factor)
+                (set! (.-x scale-obj) scale-factor)
+                (set! (.-y scale-obj) scale-factor))
+              (recur (next layers)))))))
+
+    ;; now to actually render the thing
+    (.render renderer stage)))
 
 (defn generate-world []
   (core/assoc-entity {}
@@ -129,8 +145,7 @@
     world))
 
 (defn animationLoop []
-  (update-stage-system! @world layer-map)
-  (.render renderer stage)
+  (render! renderer @world)
   (js/requestAnimFrame animationLoop))
 
 (defn update-game-state []

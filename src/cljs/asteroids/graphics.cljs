@@ -36,8 +36,10 @@
   []
   (let [prev-state (atom {:world {}
                           :prev-ids #{}})]
-    (fn [world layer-map]
-      (let [old-state @prev-state
+    (fn [world layers]
+      (let [layer-map (into {} (map (juxt :level :display-object)
+                                    layers))
+            old-state @prev-state
             prev-world (:world old-state)
             prev-ids (:prev-ids old-state)
 
