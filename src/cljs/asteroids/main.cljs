@@ -78,6 +78,9 @@
     (update-stage-system! world layers)
 
     ;; resize view if necessary
+    ;; TODO: it might be better to use a dirty flag set by a resize event
+    ;; handler than to check this every time; however, having all the logic in
+    ;; one place is appealing.
     (when-not (is-size? renderer width height)
       (.log js/console "resizing")
       (let [[new-width new-height] [width height]]
