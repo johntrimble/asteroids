@@ -102,7 +102,6 @@
       [(nth coll i) (nth coll j)])))
 
 (defn- pair [a b]
-  [a b]
   (if (< 0 (compare a b))
          [a b]
          [b a]))
@@ -111,12 +110,8 @@
 ;; These were anonymous functions, but they were not being optimized properly
 (defn- delta-xmin [a b] (- (.-xmin a) (.-xmin b)))
 (defn- delta-xmax [a b] (- (.-xmax a) (.-xmax b)))
-(defn- delta-ymin [a b] (- (.-ymin a) (.-ymin b)))
-(defn- delta-ymax [a b] (- (.-ymax a) (.-ymax b)))
 
-;; TODO: Consolidate find-collisions-along-x-axis and find-collisions-along-y-axis
-;; macro maybe?
-(defn- find-collisions-along-x-axis
+(defn- find-aabb-collisions-line-sweep
   [mins-array maxes-array]
   (let [aabbs-min (.sort mins-array delta-xmin)
         aabbs-max (.sort maxes-array delta-xmax)
@@ -132,65 +127,44 @@
            (< (.-xmin a) (.-xmax b))
            (recur (inc i)
                   j
-                  (conj active a-id)
-                  (reduce #(conj! %1 (pair %2 a-id))
-                          collisions
-                          active))
+                  (conj active a)
+                  (loop [collisions collisions, active active]
+                    (if (seq active)
+                      (let [aabb-active (first active)]
+                        (assert aabb-active)
+                        (if (and (< (.-ymin aabb-active)
+                                    (.-ymax a))
+                                 (< (.-ymin a)
+                                    (.-ymax aabb-active)))
+                          (recur (conj! collisions (pair (aget aabb-active "id")
+                                                         a-id))
+                                 (next active))
+                          (recur collisions (next active))))
+                      collisions)))
 
            ;; case 2: an aabb has become inactive
            :default
            (recur i
                   (inc j)
-                  (disj active b-id)
-                  collisions)))
-        (persistent! collisions)))))
-
-(defn- find-collisions-along-y-axis
-  [mins-array maxes-array]
-  (let [aabbs-min (.sort mins-array delta-ymin)
-        aabbs-max (.sort maxes-array delta-ymax)
-        size (count aabbs-max )]
-    (loop [i 0, j 0, active #{}, collisions (transient #{})]
-      (if (and (< i size) (< j size))
-        (let [a (aget aabbs-min i)
-              b (aget aabbs-max j)
-              a-id (aget a "id")
-              b-id (aget b "id")]
-          (cond
-           ;; case 1: an aabb has become active
-           (< (.-ymin a) (.-ymax b))
-           (recur (inc i)
-                  j
-                  (conj active a-id)
-                  (reduce #(conj! %1 (pair %2 a-id))
-                          collisions
-                          active))
-
-           ;; case 2: an aabb has become inactive
-           :default
-           (recur i
-                  (inc j)
-                  (disj active b-id)
+                  (disj active b)
                   collisions)))
         (persistent! collisions)))))
 
 ;; Arrays used here for performance reasons.
 (defn find-aabb-collisions [world]
-  (let [aabbs (->> world
-                   (get-entities)
-                   (filter #(has-components? % :aabb :collidable))
-                   (map (fn [e]
-                          (let [id (get-id e)
-                                aabb-comp (get-component e :aabb)]
-                            (aset aabb-comp "id" id)
-                            aabb-comp)))
-                   (to-array))
-        aabbs-min aabbs
-        aabbs-max (.slice aabbs 0)
-        x-collided (find-collisions-along-x-axis aabbs-min aabbs-max)
-        y-collided (find-collisions-along-y-axis aabbs-min aabbs-max)]
-    (seq (set/intersection x-collided
-                           y-collided))))
+  (let [aabbs (make-array 0)]
+    (loop [entities (get-entities world)]
+      (when (seq entities)
+        (let [entity (first entities)]
+          (when (has-component? entity :collidable)
+            (let [aabb-comp (get-component entity :aabb)]
+              (when-not (nil? aabb-comp)
+                (aset aabb-comp "id" (get-id entity))
+                (.push aabbs aabb-comp)))))
+        (recur (next entities))))
+    (let [aabbs-min aabbs
+          aabbs-max (.slice aabbs 0)]
+      (find-aabb-collisions-line-sweep aabbs-min aabbs-max))))
 
 (defn ^boolean circles-collide? [c1 r1 c2 r2]
   (> (+ r1 r2) (vector/length (vector/sub c1 c2))))
