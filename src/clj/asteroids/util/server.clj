@@ -11,32 +11,14 @@
             [clojure.string :as str])
   (:gen-class))
 
-#_(def target-path (.getCanonicalPath (File. "target")))
-
 (defn handler [request]
   (if (= "/" (:uri request))
     (response/redirect "/index.html")))
-
-#_(defn wrap-rewrite-source-maps [handler]
-  (fn [request]
-    (let [{:keys [body status] :as resp} (handler request)]
-      (if (and (.endsWith (:uri request) ".js.map")
-               body
-               (< 199 status 300))
-        (response/header (response/response
-                           (json/write-str (update-in (json/read-str (request/body-string resp))
-                                                      ["sources"]
-                                                      (fn [sources]
-                                                        (map #(str/replace-first % target-path "")
-                                                             sources)))))
-                         "Content-Type" "application/json")
-        resp))))
 
 (def app
   (-> handler
       (file/wrap-file "target")
       (resources/wrap-resource "public")
-      #_(wrap-rewrite-source-maps)
       (content-types/wrap-content-type)
       (params/wrap-params)))
 

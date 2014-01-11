@@ -21,6 +21,9 @@
       (get-component :layer)
       (:layer 1)))
 
+(defn camera [fov]
+  {:name :camera, :fov fov})
+
 (defn create-update-stage-system
   "Creates an update-stage-system!. This system only needs to be executed to
   update the view."

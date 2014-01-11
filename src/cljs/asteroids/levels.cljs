@@ -29,9 +29,13 @@
   ([] (random-asteroid-field 15))
   ([n] (let [world {:geometry {:width 800
                                :height 500}}]
-         (->> (range n)
-              (map (fn [_] (create-rand-asteroid (core/get-width world) (core/get-height world))))
-              (reduce core/assoc-entity world)))))
+         (core/assoc-entity (->> (range n)
+                                 (map (fn [_] (create-rand-asteroid (core/get-width world) (core/get-height world))))
+                                 (reduce core/assoc-entity world))
+                            (core/entity (core/position [400 250])
+                                         (graphics/camera [800
+                                                           500])
+                                         (core/rotation 0))))))
 
 (defn empty-world []
   {:entities {}})

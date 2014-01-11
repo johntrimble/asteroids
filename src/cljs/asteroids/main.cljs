@@ -22,7 +22,9 @@
 
 (def world (atom {}))
 
-(swap! world (fn [_] (levels/spawn-ship (levels/random-asteroid-field))))
+(swap! world (fn [_]
+               (-> (levels/random-asteroid-field)
+                   (levels/spawn-ship))))
 
 (def update-world-interval 16)
 
@@ -47,6 +49,7 @@
                  :display-object (PIXI.DisplayObjectContainer.)}
                 {:level 2
                  :name :interface-layer
+                 :fixed true
                  :display-object (PIXI.DisplayObjectContainer.)}]]
     ;; Add the layers to the stage
     (dorun (map #(.addChild stage (:display-object %)) layers))
@@ -69,6 +72,14 @@
 
 (def update-stage-system! (graphics/create-update-stage-system))
 
+(defn find-with-comp [world component]
+  (loop [entities (core/get-entities world)]
+    (when (seq entities)
+      (let [entity (first entities)]
+        (if (core/has-component? entity component)
+          entity
+          (recur (next entities)))))))
+
 (defn render! [{:keys [renderer window aspect-ratio layers stage]} world]
   (let [[width height] (aspect-fit aspect-ratio
                                    (.-innerWidth window)
@@ -84,18 +95,32 @@
     (when-not (is-size? renderer width height)
       (.log js/console "resizing")
       (let [[new-width new-height] [width height]]
-        (.resize renderer width height))
+        (.resize renderer width height)))
 
       ;; scale the layers appropriately
-      (let [scale-factor (/ width (core/get-width world))]
+      (let [camera-entity (find-with-comp world :camera)
+            [camera-width camera-height] (or (:fov (core/get-component camera-entity :camera))
+                                             [(core/get-width world) (core/get-height world)])
+            [camera-x camera-y] (or (core/get-position camera-entity)
+                                    [(/ camera-width 2) (/ camera-height 2)])
+            rotation (or (core/get-rotation camera-entity)
+                         0)
+            scale-factor (/ width camera-width)]
         (loop [layers layers]
           (when (seq layers)
-            (let [{:keys [display-object]} (first layers)
-                  scale-obj (.-scale display-object)]
-              (when-not (== (.-x scale-obj) scale-factor)
-                (set! (.-x scale-obj) scale-factor)
-                (set! (.-y scale-obj) scale-factor))
-              (recur (next layers)))))))
+            (let [{:keys [display-object fixed]} (first layers)
+                  scale-obj (.-scale display-object)
+                  pos-obj (.-position display-object)
+                  pivot-obj (.-pivot display-object)]
+              (set! (.-x scale-obj) scale-factor)
+              (set! (.-y scale-obj) scale-factor)
+              (when-not fixed
+                (set! (.-x pos-obj) (* scale-factor (/ camera-width 2)))
+                (set! (.-y pos-obj) (* scale-factor (/ camera-height 2)))
+                (set! (.-x pivot-obj) camera-x)
+                (set! (.-y pivot-obj) camera-y)
+                (set! (.-rotation display-object) (- rotation)))
+              (recur (next layers))))))
 
     ;; now to actually render the thing
     (.render renderer stage)))
