@@ -135,7 +135,8 @@ asteroids.main.next_world = (function next_world(world){var world__$1 = asteroid
 asteroids.main.animationLoop = (function animationLoop(){asteroids.main.render_BANG_(asteroids.main.renderer,cljs.core.deref(asteroids.main.world));
 return requestAnimFrame(animationLoop);
 });
-asteroids.main.update_game_state = (function update_game_state(){return cljs.core.swap_BANG_.cljs$core$IFn$_invoke$arity$2(asteroids.main.world,asteroids.main.next_world);
+asteroids.main.update_game_state = (function update_game_state(){return goog.Timer.callOnce((function (){return cljs.core.swap_BANG_.cljs$core$IFn$_invoke$arity$2(asteroids.main.world,asteroids.main.next_world);
+}));
 });
 var timer_5700 = (new goog.Timer(asteroids.main.update_world_interval));timer_5700.start();
 goog.events.listen(timer_5700,goog.Timer.TICK,asteroids.main.update_game_state);
