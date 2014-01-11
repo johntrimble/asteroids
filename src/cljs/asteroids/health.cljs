@@ -52,10 +52,9 @@
    world))
 
 (defn health-bar-system [world]
-  (transform-entities
-   {:components [:health-bar :display-object :position]}
-   (fn [world entity]
-     (let [disp (:obj (core/get-component entity :display-object))
+  (doseq [entity (core/get-entities world)
+          :when (core/has-components? entity :health-bar :display-object :position)]
+         (let [disp (:obj (core/get-component entity :display-object))
            health-bar-comp (core/get-component entity :health-bar)
            target-id (:entity-id health-bar-comp)
            target (core/get-entity world target-id)
@@ -87,4 +86,4 @@
                     (* percentage health-width)
                     health-height)
          (.endFill))))
-   world))
+  world)

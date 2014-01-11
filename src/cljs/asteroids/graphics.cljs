@@ -39,13 +39,11 @@
             ids (js-obj)]
 
         ;; Populate set of active entities and add update display objects
-        (loop [entities (get-entities world)]
-          (when (seq entities)
-            (let [e (first entities)
-                  disp (:obj (get-component e :display-object))]
-              (when-not (nil? disp)
-                (aset ids (get-id e) true)
-                (when (nil? (.-parent disp))
+        (doseq [e (get-entities world)]
+          (let [disp (:obj (get-component e :display-object))]
+            (when-not (nil? disp)
+              (aset ids (get-id e) true)
+              (when (nil? (.-parent disp))
                   (let [n (get-layer e)
                         l (get layer-map n)]
                     (.addChild l disp)))
@@ -54,8 +52,7 @@
                       disp-pos (.-position disp)]
                   (set! (.-x disp-pos) x)
                   (set! (.-y disp-pos) y)
-                  (set! (.-rotation disp) rotation))))
-            (recur (next entities))))
+                  (set! (.-rotation disp) rotation)))))
 
         ;; Remove defunct display objects
         (if-not (nil? prev-ids)

@@ -180,14 +180,20 @@
                      (ttl duration remaining))))
 
 (defn ttl-system [world]
-  (let [ttl-entities (->> world
-                          get-entities
-                          (filter #(has-component? % :ttl))
-                          (map update-ttl))
-        entities-to-remove (->> ttl-entities
-                                (filter #(> 0 (-> %
-                                                  (get-component :ttl)
-                                                  :remaining))))
-        world (assoc-entities world ttl-entities)
-        world (dissoc-entities world entities-to-remove)]
-    world))
+  (assoc world
+    :entities
+    (loop [entities (get-entities world)
+           entries (transient (:entities world))]
+      (if (seq entities)
+        (let [entity (first entities)
+              ttl (get-component entity :ttl)]
+          (if-not (nil? ttl)
+            (if (< (:remaining ttl) 2)
+              ;; Time to remove the entity.
+              (recur (next entities)
+                     (dissoc! entries (get-id entity)))
+              ;; Entity will remain, but decrement ttl.
+              (recur (next entities)
+                     (assoc! entries (get-id entity) (update-ttl entity))))
+            (recur (next entities) entries)))
+        (persistent! entries)))))

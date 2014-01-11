@@ -88,6 +88,17 @@
                (perf/report))))
 
   (measurements
+   (let [l (doall (range 10000))]
+     (samples 1000 :map-performance
+              (doall (map #(* 2 %) l)))
+     (samples 1000 :mapv-performance
+              (mapv #(* 2 %) l)))
+
+   (dorun (map (fn [[k v]]
+                 (println (str k " average " v " ms")))
+               (perf/report))))
+
+  (measurements
    (let [world (levels/random-asteroid-field 1000)]
      (samples 100 :system-using-map-filter-to-process-many
               (fake-map-filter-that-processes-most-entities-system world))

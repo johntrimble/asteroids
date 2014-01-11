@@ -83,17 +83,21 @@
         dmg (+ dmg current-dmg)]
     (core/assoc-component e (health/damage dmg))))
 
-(defn update-projectile [world e]
-  (->> (core/get-component e :collidable)
-       :entity-ids
-       (map #(core/get-entity world %))
-       (filter identity)
-       (map #(add-damage % 100))
-       (core/assoc-entities (core/dissoc-entity world e))))
-
 (defn projectile-collision-resolution-system [world]
-  (->> world
-       core/get-entities
-       (filter #(core/has-components? % :projectile :collidable))
-       (filter #(seq (:entity-ids (core/get-component % :collidable))))
-       (reduce update-projectile world)))
+  (assoc world
+    :entities
+    (persistent! (reduce (fn [entity-entries entity]
+                           (if (core/has-components? entity :projectile :collidable)
+                             (if-let [entity-ids (-> entity (core/get-component :collidable) :entity-ids)]
+                               (reduce (fn [entity-entries hit-id]
+                                         (if-let [hit-entity (core/get-entity world hit-id)]
+                                           (assoc! entity-entries
+                                                   hit-id
+                                                   (add-damage hit-entity 100))
+                                           entity-entries))
+                                         (dissoc! entity-entries (core/get-id entity))
+                                         entity-ids)
+                               entity-entries)
+                             entity-entries))
+                         (transient (:entities world))
+                         (core/get-entities world)))))
