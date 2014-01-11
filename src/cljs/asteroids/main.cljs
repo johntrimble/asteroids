@@ -177,7 +177,7 @@
   (js/requestAnimFrame animationLoop))
 
 (defn update-game-state []
-  (swap! world next-world))
+  (.callOnce goog.Timer #(swap! world next-world)))
 
 (let [timer (goog.Timer. update-world-interval)]
   (. timer (start))
