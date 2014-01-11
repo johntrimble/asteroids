@@ -11,17 +11,13 @@
             [clojure.string :as str])
   (:gen-class))
 
-(def target-path (.getCanonicalPath (File. "target")))
+#_(def target-path (.getCanonicalPath (File. "target")))
 
 (defn handler [request]
   (if (= "/" (:uri request))
-    (response/redirect "/index.html")
-    (if (.startsWith (:uri request) "/_sources")
-      (response/header (response/file-response (get-in request
-                                                       [:query-params "file"]))
-                       "Content-Type" "text/plain"))))
+    (response/redirect "/index.html")))
 
-(defn wrap-rewrite-source-maps [handler]
+#_(defn wrap-rewrite-source-maps [handler]
   (fn [request]
     (let [{:keys [body status] :as resp} (handler request)]
       (if (and (.endsWith (:uri request) ".js.map")
@@ -40,7 +36,7 @@
   (-> handler
       (file/wrap-file "target")
       (resources/wrap-resource "public")
-      (wrap-rewrite-source-maps)
+      #_(wrap-rewrite-source-maps)
       (content-types/wrap-content-type)
       (params/wrap-params)))
 
