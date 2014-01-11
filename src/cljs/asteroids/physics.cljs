@@ -111,10 +111,10 @@
 (defn- delta-xmin [a b] (- (.-xmin a) (.-xmin b)))
 (defn- delta-xmax [a b] (- (.-xmax a) (.-xmax b)))
 
-(defn- find-aabb-collisions-line-sweep
-  [mins-array maxes-array]
-  (let [aabbs-min (.sort mins-array delta-xmin)
-        aabbs-max (.sort maxes-array delta-xmax)
+(defn- find-aabb-collisions-line-sweep!
+  [aabbs]
+  (let [aabbs-min (.sort aabbs delta-xmin)
+        aabbs-max (.sort (.slice aabbs 0) delta-xmax)
         size (count aabbs-max)]
     (loop [i 0, j 0, active #{}, collisions (transient #{})]
       (if (and (< i size) (< j size))
@@ -162,9 +162,7 @@
                 (aset aabb-comp "id" (get-id entity))
                 (.push aabbs aabb-comp)))))
         (recur (next entities))))
-    (let [aabbs-min aabbs
-          aabbs-max (.slice aabbs 0)]
-      (find-aabb-collisions-line-sweep aabbs-min aabbs-max))))
+    (find-aabb-collisions-line-sweep! aabbs)))
 
 (defn ^boolean circles-collide? [c1 r1 c2 r2]
   (> (+ r1 r2) (vector/length (vector/sub c1 c2))))
