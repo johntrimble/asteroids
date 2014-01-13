@@ -47,6 +47,9 @@
 (defn moment-inertia [tensor]
   {:name :moment-inertia :tensor tensor})
 
+(defn linear-damping [coefficient]
+  {:name :drag, :coefficient coefficient})
+
 (defn get-moment-of-inertia [entity]
   (-> entity
       (get-component :moment-inertia)
@@ -338,6 +341,7 @@
 
 (defn update-physics [world e]
   (let [mov (get-component e :movement)
+        linear-damping (get-component e :drag)
         pos (get-position e)
         acc (.-acceleration mov)
         vel (.-velocity mov)
@@ -349,9 +353,17 @@
         ang-max-vel (.-max_angular_velocity mov)
         rot (get-rotation e)
         new-vel (vector/add vel acc)
+        new-vel-normal (vector/normalize new-vel)
         new-vel (if (> (vector/length new-vel) max-vel)
-                  (vector/scale max-vel (vector/normalize new-vel))
+                  (vector/scale max-vel new-vel-normal)
                   new-vel)
+        new-vel (if (or (nil? linear-damping) (vector/zero-vector? new-vel))
+                  new-vel
+                  (let [new-vel-mag (vector/length new-vel)
+                        drag-mag (* new-vel-mag (:coefficient linear-damping))
+                        drag-j (vector/scale (* -1 drag-mag)
+                                             new-vel-normal)]
+                    (vector/add new-vel drag-j)))
         new-ang-vel (+ ang-vel ang-acc)
         ang-speed (math/abs new-ang-vel)
         new-ang-vel (if (> ang-speed ang-max-vel)
@@ -361,11 +373,16 @@
         new-pos [(mod (nth new-pos 0) (get-width world))
                  (mod (nth new-pos 1) (get-height world))]
         new-rot (+ new-ang-vel rot)]
-    (update-aabb (assoc-components e
-                                   [(movement acc new-vel (.-max_velocity mov)
-                                              ang-acc new-ang-vel (.-max_angular_velocity mov))
-                                    (position new-pos)
-                                    (rotation new-rot)]))))
+    (-> e
+        (assoc-components [(movement acc
+                                     new-vel
+                                     (.-max_velocity mov)
+                                     ang-acc
+                                     new-ang-vel
+                                     (.-max_angular_velocity mov))
+                           (position new-pos)
+                           (rotation new-rot)])
+        update-aabb)))
 
 (defn physics-system [world]
   (loop [entities (:entities world)

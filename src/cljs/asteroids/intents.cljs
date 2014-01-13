@@ -43,7 +43,7 @@
         rotation (or (core/get-rotation e) 0)
         direction (vector/rotate rotation [1 0])
         intent-vec (if (core/has-component? e :thrust-intent)
-                     (vector/scale 0.05 direction)
+                     (vector/scale 0.1 direction)
                      [0 0])
         thrust-vec (-> e
                        (core/get-component :thrust)

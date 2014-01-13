@@ -102,7 +102,6 @@
                      (core/position [5 5])
                      (core/aabb [4 4] [6 6]))
       world (core/assoc-entity {} a)
-      a (core/get-entity world (core/get-id a))
       world-new (physics/physics-system world)
       a-new (core/get-entity world-new (core/get-id a))]
   (describe "physics-system"
@@ -119,6 +118,43 @@
                 (should-not (js/isNaN (core/get-angular-acceleration a-new))))
             #_(it "should update the aabb"
                 (should= [[7 5.5] [9 7.5]] (core/get-aabb a)))))
+
+(let [a (core/entity (core/movement [1 0.5]
+                                    [2 1]
+                                    math/infinity
+                                    0
+                                    0
+                                    math/infinity)
+                     (core/position [5 5])
+                     (core/mass 10)
+                     (physics/linear-damping 0.04))
+      world (core/assoc-entity {} a)
+      world-new (physics/physics-system world)
+      a-new (core/get-entity world-new (core/get-id a))
+      [vx vy] (core/get-velocity a-new)
+      [x y] (core/get-position a-new)]
+  (describe "physics-system linear damping"
+            (it "should reduce velocity"
+                (should (> 3 vx 0))
+                (should (> 1.5 vy 0)))
+            (it "should apply before updating position"
+                (should (> 8 x 5))
+                (should (> 6.5 y 5)))
+            (it "should not freak out when velocity and acceleration are 0"
+                (let [e (core/entity (core/movement [0 0]
+                                                    [0 0]
+                                                    math/infinity
+                                                    0
+                                                    0
+                                                    math/infinity)
+                                     (core/position [5 5])
+                                     (core/mass 10)
+                                     (physics/linear-damping 0.00004))
+                      world (core/assoc-entity {} e)
+                      world-new (physics/physics-system world)
+                      a-new (core/get-entity world-new (core/get-id e))]
+                  (should= [0 0] (core/get-velocity a-new))
+                  (should= [5 5] (core/get-position a-new))))))
 
 (defn mock-key-event [c]
   (let [out (js-obj)]

@@ -51,6 +51,7 @@
                                          0
                                          math/infinity)
                           (core/rotation 0)
+                          (physics/linear-damping 0.02)
                           (physics/collidable)
                           (health/health 10000)
                           (core/player)
