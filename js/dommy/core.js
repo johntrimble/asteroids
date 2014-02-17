@@ -293,11 +293,11 @@ dommy.core.selector = (function selector(data){if(cljs.core.coll_QMARK_(data))
 }
 }
 });
-dommy.core.selector_map = (function selector_map(template,key_selectors_map){var container = dommy.template.__GT_node_like(template);if(!(cljs.core.contains_QMARK_(key_selectors_map,cljs.core.constant$keyword$91)))
+dommy.core.selector_map = (function selector_map(template,key_selectors_map){var container = dommy.template.__GT_node_like(template);if(!(cljs.core.contains_QMARK_(key_selectors_map,cljs.core.constant$keyword$93)))
 {} else
-{throw (new Error([cljs.core.str("Assert failed: "),cljs.core.str(cljs.core.pr_str.cljs$core$IFn$_invoke$arity$variadic(cljs.core.array_seq([cljs.core.list(new cljs.core.Symbol(null,"not","not",-1640422260,null),cljs.core.list(new cljs.core.Symbol(null,"contains?","contains?",-2051487815,null),new cljs.core.Symbol(null,"key-selectors-map","key-selectors-map",19054414,null),cljs.core.constant$keyword$91))], 0)))].join('')));
+{throw (new Error([cljs.core.str("Assert failed: "),cljs.core.str(cljs.core.pr_str.cljs$core$IFn$_invoke$arity$variadic(cljs.core.array_seq([cljs.core.list(new cljs.core.Symbol(null,"not","not",-1640422260,null),cljs.core.list(new cljs.core.Symbol(null,"contains?","contains?",-2051487815,null),new cljs.core.Symbol(null,"key-selectors-map","key-selectors-map",19054414,null),cljs.core.constant$keyword$93))], 0)))].join('')));
 }
-return cljs.core.merge.cljs$core$IFn$_invoke$arity$variadic(cljs.core.array_seq([new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$91,container], null),cljs.core.into(cljs.core.PersistentArrayMap.EMPTY,cljs.core.map.cljs$core$IFn$_invoke$arity$2((function (p__6951){var vec__6952 = p__6951;var k = cljs.core.nth.cljs$core$IFn$_invoke$arity$3(vec__6952,0,null);var v = cljs.core.nth.cljs$core$IFn$_invoke$arity$3(vec__6952,1,null);return new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [k,(cljs.core.truth_(cljs.core.constant$keyword$92.cljs$core$IFn$_invoke$arity$1(cljs.core.meta(v)))?(function (){if(typeof dommy.core.t6953 !== 'undefined')
+return cljs.core.merge.cljs$core$IFn$_invoke$arity$variadic(cljs.core.array_seq([new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$93,container], null),cljs.core.into(cljs.core.PersistentArrayMap.EMPTY,cljs.core.map.cljs$core$IFn$_invoke$arity$2((function (p__6951){var vec__6952 = p__6951;var k = cljs.core.nth.cljs$core$IFn$_invoke$arity$3(vec__6952,0,null);var v = cljs.core.nth.cljs$core$IFn$_invoke$arity$3(vec__6952,1,null);return new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [k,(cljs.core.truth_(cljs.core.constant$keyword$94.cljs$core$IFn$_invoke$arity$1(cljs.core.meta(v)))?(function (){if(typeof dommy.core.t6953 !== 'undefined')
 {} else
 {
 /**
@@ -423,12 +423,12 @@ dommy.core.special_listener_makers = cljs.core.into(cljs.core.PersistentArrayMap
 }
 });
 })], true, false)], null);
-}),new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$93,cljs.core.constant$keyword$95,cljs.core.constant$keyword$94,cljs.core.constant$keyword$96], null)));
+}),new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$95,cljs.core.constant$keyword$97,cljs.core.constant$keyword$96,cljs.core.constant$keyword$98], null)));
 /**
 * fires f if event.target is found with `selector`
 */
 dommy.core.live_listener = (function live_listener(elem,selector,f){return (function (event){var selected_target = dommy.core.closest.cljs$core$IFn$_invoke$arity$3(dommy.template.__GT_node_like(elem),event.target,selector);if(cljs.core.truth_((function (){var and__3419__auto__ = selected_target;if(cljs.core.truth_(and__3419__auto__))
-{return cljs.core.not((dommy.core.attr.cljs$core$IFn$_invoke$arity$2 ? dommy.core.attr.cljs$core$IFn$_invoke$arity$2(selected_target,cljs.core.constant$keyword$97) : dommy.core.attr.call(null,selected_target,cljs.core.constant$keyword$97)));
+{return cljs.core.not((dommy.core.attr.cljs$core$IFn$_invoke$arity$2 ? dommy.core.attr.cljs$core$IFn$_invoke$arity$2(selected_target,cljs.core.constant$keyword$99) : dommy.core.attr.call(null,selected_target,cljs.core.constant$keyword$99)));
 } else
 {return and__3419__auto__;
 }

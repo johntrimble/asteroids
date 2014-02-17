@@ -584,7 +584,7 @@ var set_attr_BANG___3 = (function (elem,k,v){if(cljs.core.truth_(v))
 {var G__7635 = dommy.template.__GT_node_like(elem);(G__7635[cljs.core.name(k)] = v);
 return G__7635;
 } else
-{var G__7636 = dommy.template.__GT_node_like(elem);G__7636.setAttribute(cljs.core.name(k),(((k === cljs.core.constant$keyword$87))?dommy.attrs.style_str(v):v));
+{var G__7636 = dommy.template.__GT_node_like(elem);G__7636.setAttribute(cljs.core.name(k),(((k === cljs.core.constant$keyword$89))?dommy.attrs.style_str(v):v));
 return G__7636;
 }
 } else
@@ -688,7 +688,7 @@ return set_attr_BANG_;
 */
 dommy.attrs.remove_attr_BANG_ = (function() {
 var remove_attr_BANG_ = null;
-var remove_attr_BANG___2 = (function (elem,k){var elem__$1 = dommy.template.__GT_node_like(elem);if(cljs.core.truth_(new cljs.core.PersistentHashSet(null, new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$88,null,cljs.core.constant$keyword$89,null], null), null).call(null,k)))
+var remove_attr_BANG___2 = (function (elem,k){var elem__$1 = dommy.template.__GT_node_like(elem);if(cljs.core.truth_(new cljs.core.PersistentHashSet(null, new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$90,null,cljs.core.constant$keyword$91,null], null), null).call(null,k)))
 {elem__$1.className = "";
 } else
 {elem__$1.removeAttribute(cljs.core.name(k));
@@ -850,7 +850,7 @@ dommy.attrs.bounding_client_rect = (function bounding_client_rect(elem){return c
 return G__7708;
 })(),cljs.core.array_seq([cljs.core.constant$keyword$12,true], 0));
 });
-dommy.attrs.scroll_into_view = (function scroll_into_view(elem,align_with_top_QMARK_){var elem__$1 = dommy.template.__GT_node_like(elem);var top = cljs.core.constant$keyword$90.cljs$core$IFn$_invoke$arity$1(dommy.attrs.bounding_client_rect(elem__$1));if((window.innerHeight < (top + elem__$1.offsetHeight)))
+dommy.attrs.scroll_into_view = (function scroll_into_view(elem,align_with_top_QMARK_){var elem__$1 = dommy.template.__GT_node_like(elem);var top = cljs.core.constant$keyword$92.cljs$core$IFn$_invoke$arity$1(dommy.attrs.bounding_client_rect(elem__$1));if((window.innerHeight < (top + elem__$1.offsetHeight)))
 {return elem__$1.scrollIntoView(align_with_top_QMARK_);
 } else
 {return null;

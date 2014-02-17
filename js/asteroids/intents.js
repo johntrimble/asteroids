@@ -7,17 +7,17 @@ goog.require('asteroids.vector');
 goog.require('asteroids.vector');
 goog.require('asteroids.core');
 goog.require('asteroids.core');
-asteroids.intents.thrust_intent = (function thrust_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$77], null);
+asteroids.intents.thrust_intent = (function thrust_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$79], null);
 });
-asteroids.intents.rotate_right_intent = (function rotate_right_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$78], null);
+asteroids.intents.rotate_right_intent = (function rotate_right_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$80], null);
 });
-asteroids.intents.rotate_left_intent = (function rotate_left_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$79], null);
+asteroids.intents.rotate_left_intent = (function rotate_left_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$81], null);
 });
-asteroids.intents.fire_intent = (function fire_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$80], null);
+asteroids.intents.fire_intent = (function fire_intent(){return new cljs.core.PersistentArrayMap(null, 1, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$82], null);
 });
-asteroids.intents.thrust = (function thrust(acc){return new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$81,cljs.core.constant$keyword$18,acc], null);
+asteroids.intents.thrust = (function thrust(acc){return new cljs.core.PersistentArrayMap(null, 2, [cljs.core.constant$keyword$17,cljs.core.constant$keyword$83,cljs.core.constant$keyword$18,acc], null);
 });
-asteroids.intents.key__GT_intent = new cljs.core.PersistentArrayMap(null, 4, [cljs.core.constant$keyword$82,asteroids.intents.rotate_right_intent,cljs.core.constant$keyword$83,asteroids.intents.rotate_left_intent,cljs.core.constant$keyword$84,asteroids.intents.thrust_intent,cljs.core.constant$keyword$85,asteroids.intents.fire_intent], null);
+asteroids.intents.key__GT_intent = new cljs.core.PersistentArrayMap(null, 4, [cljs.core.constant$keyword$84,asteroids.intents.rotate_right_intent,cljs.core.constant$keyword$85,asteroids.intents.rotate_left_intent,cljs.core.constant$keyword$86,asteroids.intents.thrust_intent,cljs.core.constant$keyword$87,asteroids.intents.fire_intent], null);
 asteroids.intents.intent_system = (function intent_system(world){var world__3315__auto__ = world;var f__3316__auto__ = ((function (world__3315__auto__){
 return (function (world__$1,entity){return cljs.core.reduce.cljs$core$IFn$_invoke$arity$3(((function (world__3315__auto__){
 return (function (p1__5163_SHARP_,p2__5162_SHARP_){if(cljs.core.truth_(p2__5162_SHARP_))
@@ -70,7 +70,7 @@ break;
 });})(world__3315__auto__))
 ,null,null));
 });})(world__3315__auto__))
-;return iter__4142__auto__(cljs.core.constant$keyword$86.cljs$core$IFn$_invoke$arity$1(world__$1));
+;return iter__4142__auto__(cljs.core.constant$keyword$88.cljs$core$IFn$_invoke$arity$1(world__$1));
 })());
 });})(world__3315__auto__))
 ;var entities__3317__auto__ = asteroids.core.get_entities(world__3315__auto__);var output__3318__auto__ = cljs.core.transient$(cljs.core.constant$keyword$45.cljs$core$IFn$_invoke$arity$1(world__3315__auto__));while(true){
@@ -103,21 +103,21 @@ asteroids.intents.apply_thrust = (function apply_thrust(e){var mov = asteroids.c
 } else
 {return 0;
 }
-})();var direction = asteroids.vector.rotate(rotation,new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [1,0], null));var intent_vec = ((asteroids.core.has_component_QMARK_(e,cljs.core.constant$keyword$77))?asteroids.vector.scale(0.05,direction):new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [0,0], null));var thrust_vec = cljs.core.constant$keyword$18.cljs$core$IFn$_invoke$arity$2(asteroids.core.get_component(e,cljs.core.constant$keyword$81),new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [0,0], null));var acc = mov.acceleration;var nacc = asteroids.vector.add(acc,asteroids.vector.sub(intent_vec,thrust_vec));return asteroids.core.assoc_component(asteroids.core.assoc_component(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(e,cljs.core.constant$keyword$77),asteroids.core.movement(nacc,mov.velocity,mov.max_velocity,mov.angular_acceleration,mov.angular_velocity,mov.max_angular_velocity)),asteroids.intents.thrust(intent_vec));
+})();var direction = asteroids.vector.rotate(rotation,new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [1,0], null));var intent_vec = ((asteroids.core.has_component_QMARK_(e,cljs.core.constant$keyword$79))?asteroids.vector.scale(0.1,direction):new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [0,0], null));var thrust_vec = cljs.core.constant$keyword$18.cljs$core$IFn$_invoke$arity$2(asteroids.core.get_component(e,cljs.core.constant$keyword$83),new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [0,0], null));var acc = mov.acceleration;var nacc = asteroids.vector.add(acc,asteroids.vector.sub(intent_vec,thrust_vec));return asteroids.core.assoc_component(asteroids.core.assoc_component(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(e,cljs.core.constant$keyword$79),asteroids.core.movement(nacc,mov.velocity,mov.max_velocity,mov.angular_acceleration,mov.angular_velocity,mov.max_angular_velocity)),asteroids.intents.thrust(intent_vec));
 });
 /**
 * This system takes takes thrust-intent components and updates the associated
 * entities' acceleration accordingly.
 */
-asteroids.intents.thrust_system = (function thrust_system(world){return asteroids.core.assoc_entities(world,cljs.core.map.cljs$core$IFn$_invoke$arity$2(asteroids.intents.apply_thrust,cljs.core.filter((function (p1__5177_SHARP_){return (asteroids.core.has_component_QMARK_(p1__5177_SHARP_,cljs.core.constant$keyword$77)) || (asteroids.core.has_component_QMARK_(p1__5177_SHARP_,cljs.core.constant$keyword$81));
+asteroids.intents.thrust_system = (function thrust_system(world){return asteroids.core.assoc_entities(world,cljs.core.map.cljs$core$IFn$_invoke$arity$2(asteroids.intents.apply_thrust,cljs.core.filter((function (p1__5177_SHARP_){return (asteroids.core.has_component_QMARK_(p1__5177_SHARP_,cljs.core.constant$keyword$79)) || (asteroids.core.has_component_QMARK_(p1__5177_SHARP_,cljs.core.constant$keyword$83));
 }),asteroids.core.get_entities(world))));
 });
-asteroids.intents.update_rotation = (function update_rotation(entity){var angle = cljs.core.constant$keyword$19.cljs$core$IFn$_invoke$arity$2(asteroids.core.get_component(entity,cljs.core.constant$keyword$32),0);var delta = (0.01 * (2 * asteroids.math.pi));var delta__$1 = (cljs.core.truth_(asteroids.core.get_component(entity,cljs.core.constant$keyword$79))?(-1 * delta):delta);var rotate = (angle + delta__$1);return asteroids.core.assoc_component(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(entity,cljs.core.constant$keyword$79),cljs.core.constant$keyword$78),asteroids.core.rotation(rotate));
+asteroids.intents.update_rotation = (function update_rotation(entity){var angle = cljs.core.constant$keyword$19.cljs$core$IFn$_invoke$arity$2(asteroids.core.get_component(entity,cljs.core.constant$keyword$32),0);var delta = (0.01 * (2 * asteroids.math.pi));var delta__$1 = (cljs.core.truth_(asteroids.core.get_component(entity,cljs.core.constant$keyword$81))?(-1 * delta):delta);var rotate = (angle + delta__$1);return asteroids.core.assoc_component(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(cljs.core.dissoc.cljs$core$IFn$_invoke$arity$2(entity,cljs.core.constant$keyword$81),cljs.core.constant$keyword$80),asteroids.core.rotation(rotate));
 });
 /**
 * This system takes the rotate-left-intent and rotate-right-intent components
 * and updates the associated entities' rotation accordingly.
 */
-asteroids.intents.rotation_system = (function rotation_system(world){return asteroids.core.assoc_entities(world,cljs.core.map.cljs$core$IFn$_invoke$arity$2(asteroids.intents.update_rotation,cljs.core.filter((function (p1__5178_SHARP_){return (asteroids.core.has_component_QMARK_(p1__5178_SHARP_,cljs.core.constant$keyword$79)) || (asteroids.core.has_component_QMARK_(p1__5178_SHARP_,cljs.core.constant$keyword$78));
+asteroids.intents.rotation_system = (function rotation_system(world){return asteroids.core.assoc_entities(world,cljs.core.map.cljs$core$IFn$_invoke$arity$2(asteroids.intents.update_rotation,cljs.core.filter((function (p1__5178_SHARP_){return (asteroids.core.has_component_QMARK_(p1__5178_SHARP_,cljs.core.constant$keyword$81)) || (asteroids.core.has_component_QMARK_(p1__5178_SHARP_,cljs.core.constant$keyword$80));
 }),asteroids.core.get_entities(world))));
 });
