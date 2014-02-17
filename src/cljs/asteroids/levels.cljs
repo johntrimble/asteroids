@@ -26,7 +26,7 @@
                                 :radius r})))
 
 (defn random-asteroid-field
-  ([] (random-asteroid-field 15))
+  ([] (random-asteroid-field 10))
   ([n] (let [world {:geometry {:width 800
                                :height 500}}]
          (core/assoc-entity (->> (range n)
