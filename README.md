@@ -3,6 +3,7 @@ This is a simple asteroids-esque game for experimenting with using the Entity Co
 
 ## Demo
 You can see the game in action at [http://johntrimble.github.io/asteroids/](http://johntrimble.github.io/asteroids/).
+Currently, this works best in Chrome, but also supports Safari and Firefox. I'm still ironing out some issues with IE.
 
 ## Requirements
 - bower (>=1.2.4)
